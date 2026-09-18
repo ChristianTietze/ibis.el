@@ -17,6 +17,8 @@
 ;;; Code:
 
 (require 'ibis)
+(require 'imenu)
+(require 'outline)
 
 (defface ibis-issue-face '((t :inherit font-lock-function-name-face))
   "Face for the prose of an issue line."
@@ -104,6 +106,41 @@
      (1 'ibis-hashtag-face prepend)))
   "Font lock keywords highlighting marker, identifier, prose and hashtags.")
 
+(defconst ibis-mode--outline-rx
+  (rx (zero-or-more " ") ibis-marker-rx " ")
+  "Regexp matching the marker that opens a node line.")
+
+(defun ibis-mode--outline-level ()
+  "Return the outline level of the line at point, counting from 1.
+
+Indentation is counted in characters rather than columns: outline
+calls this on lines it has just hidden, whose display width is
+zero."
+  (save-excursion
+    (let ((beg (line-beginning-position)))
+      (goto-char beg)
+      (skip-chars-forward " ")
+      (1+ (/ (- (point) beg) 2)))))
+
+(defun ibis-mode--imenu-index ()
+  "Return an imenu index of the top-level issues of the buffer."
+  (let ((index nil))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let* ((beg (line-beginning-position))
+               (parsed (ibis--parse-line
+                        (buffer-substring-no-properties
+                         beg (line-end-position)))))
+          (when (and parsed
+                     (zerop (plist-get parsed :column))
+                     (eq (plist-get parsed :marker) 'issue))
+            (let ((id (plist-get parsed :id))
+                  (text (plist-get parsed :text)))
+              (push (cons (if id (concat id ": " text) text) beg) index))))
+        (forward-line 1)))
+    (nreverse index)))
+
 ;;;###autoload
 (define-derived-mode ibis-mode text-mode "IBIS"
   "Major mode for editing `.ibis' issue maps.
@@ -112,6 +149,9 @@ Each line carries a marker: `?' for an issue, `→' (or `->') for a
 position, `+' and `-' for arguments.  Indentation by two spaces
 nests a node under the one above it."
   (setq-local font-lock-defaults '(ibis-mode--font-lock-keywords t))
+  (setq-local outline-regexp ibis-mode--outline-rx)
+  (setq-local outline-level #'ibis-mode--outline-level)
+  (setq-local imenu-create-index-function #'ibis-mode--imenu-index)
   (setq-local require-final-newline t)
   (setq-local comment-start nil))
 

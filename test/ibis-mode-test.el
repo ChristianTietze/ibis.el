@@ -85,6 +85,38 @@
                   (ibis-mode-test--faces-before "->")))
     (should (memq 'ibis-position-face (ibis-mode-test--faces-before "b")))))
 
+(ert-deftest ibis-mode-test-outline-level ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (search-forward "+ Termin kann verfallen")
+    (goto-char (match-beginning 0))
+    (should (= (funcall outline-level) 3))))
+
+(ert-deftest ibis-mode-test-outline-hide-sublevels ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (outline-hide-sublevels 1)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (let ((beg (line-beginning-position)))
+        (unless (string-blank-p (buffer-substring-no-properties
+                                 beg (line-end-position)))
+          (if (eq (char-after beg) ??)
+              (should-not (invisible-p beg))
+            (should (invisible-p beg)))))
+      (forward-line 1))))
+
+(ert-deftest ibis-mode-test-imenu-index ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (let ((index (funcall imenu-create-index-function)))
+      (should (= (length index) 6))
+      (should (equal (caar index)
+                     "I-1: Wie werden Bedingung und Termin verständlich?"))
+      (should (= (cdar index) (point-min))))))
+
+(ert-deftest ibis-mode-test-imenu-index-without-id ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n? c\n"
+    (let ((index (funcall imenu-create-index-function)))
+      (should (equal (mapcar #'car index) '("a" "c"))))))
+
 (provide 'ibis-mode-test)
 
 ;;; ibis-mode-test.el ends here
