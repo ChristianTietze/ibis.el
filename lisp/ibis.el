@@ -184,6 +184,57 @@ it specializes."
   "Return non-nil when PREDICATE may relate class SUBJECT to class OBJECT."
   (and (memq predicate (ibis-legal-properties subject object)) t))
 
+(cl-defstruct (ibis-node (:copier nil))
+  "A node of an IBIS network.
+
+ID is the optional identifier written in the file, CLASS one of
+`issue', `position' or `argument', TEXT the node's prose, TAGS its
+hashtags without the leading `#', and BEG the buffer position the
+node was parsed from."
+  id class text tags beg)
+
+(cl-defstruct (ibis-edge (:copier nil))
+  "A directed relation between two `ibis-node' structs.
+
+SUBJECT and OBJECT are nodes compared by identity, PREDICATE is an
+IBIS property name."
+  subject predicate object)
+
+(cl-defstruct (ibis-network (:copier nil))
+  "An IBIS network holding NODES and EDGES in document order."
+  nodes edges)
+
+(defun ibis-network-add-node (network node)
+  "Append NODE to NETWORK and return NODE."
+  (setf (ibis-network-nodes network)
+        (append (ibis-network-nodes network) (list node)))
+  node)
+
+(defun ibis-network-add-edge (network subject predicate object)
+  "Append an edge SUBJECT PREDICATE OBJECT to NETWORK and return it."
+  (let ((edge (make-ibis-edge :subject subject :predicate predicate
+                              :object object)))
+    (setf (ibis-network-edges network)
+          (append (ibis-network-edges network) (list edge)))
+    edge))
+
+(defun ibis-network-node-by-id (network id)
+  "Return the node of NETWORK whose identifier is ID, or nil."
+  (seq-find (lambda (node) (equal (ibis-node-id node) id))
+            (ibis-network-nodes network)))
+
+(defun ibis-node-parent (network node)
+  "Return the node NODE attaches to in NETWORK, or nil when it is a root."
+  (let ((edge (seq-find (lambda (edge) (eq (ibis-edge-subject edge) node))
+                        (ibis-network-edges network))))
+    (and edge (ibis-edge-object edge))))
+
+(defun ibis-node-children (network node)
+  "Return the nodes attached to NODE in NETWORK, in edge order."
+  (mapcar #'ibis-edge-subject
+          (seq-filter (lambda (edge) (eq (ibis-edge-object edge) node))
+                      (ibis-network-edges network))))
+
 (provide 'ibis)
 
 ;;; ibis.el ends here

@@ -90,6 +90,46 @@
         (should (ibis-subclass-p subject (ibis-property-domain prop)))
         (should (ibis-subclass-p object (ibis-property-range prop)))))))
 
+(defun ibis-test--sample-network ()
+  "Return a network of one issue with two positions attached."
+  (let* ((network (make-ibis-network))
+         (issue (ibis-network-add-node
+                 network (make-ibis-node :id "I-1" :class 'issue :text "Wie?")))
+         (first (ibis-network-add-node
+                 network (make-ibis-node :class 'position :text "So")))
+         (second (ibis-network-add-node
+                  network (make-ibis-node :class 'position :text "Anders"))))
+    (ibis-network-add-edge network first 'responds-to issue)
+    (ibis-network-add-edge network second 'responds-to issue)
+    network))
+
+(ert-deftest ibis-test-network-node-by-id ()
+  (let* ((network (ibis-test--sample-network))
+         (issue (ibis-network-node-by-id network "I-1")))
+    (should (eq issue (car (ibis-network-nodes network))))
+    (should (equal (ibis-node-text issue) "Wie?"))
+    (should-not (ibis-network-node-by-id network "I-9"))))
+
+(ert-deftest ibis-test-node-parent-and-children ()
+  (let* ((network (ibis-test--sample-network))
+         (nodes (ibis-network-nodes network))
+         (issue (nth 0 nodes))
+         (first (nth 1 nodes))
+         (second (nth 2 nodes)))
+    (should (eq (ibis-node-parent network first) issue))
+    (should (eq (ibis-node-parent network second) issue))
+    (should-not (ibis-node-parent network issue))
+    (should (equal (ibis-node-children network issue) (list first second)))
+    (should-not (ibis-node-children network first))))
+
+(ert-deftest ibis-test-network-add-edge ()
+  (let* ((network (ibis-test--sample-network))
+         (edge (car (ibis-network-edges network))))
+    (should (= (length (ibis-network-edges network)) 2))
+    (should (eq (ibis-edge-predicate edge) 'responds-to))
+    (should (eq (ibis-edge-subject edge) (nth 1 (ibis-network-nodes network))))
+    (should (eq (ibis-edge-object edge) (nth 0 (ibis-network-nodes network))))))
+
 (provide 'ibis-test)
 
 ;;; ibis-test.el ends here
