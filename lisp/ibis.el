@@ -27,6 +27,49 @@
 (defconst ibis-version "0.7"
   "Version of the IBIS vocabulary encoded here.")
 
+(defgroup ibis nil
+  "Issue-Based Information Systems in plain text."
+  :group 'text
+  :prefix "ibis-")
+
+(defconst ibis--classes
+  '((entity . skos:Concept)
+    (state . entity)
+    (issue . state)
+    (position . entity)
+    (argument . issue)
+    (invariant . entity)
+    (network . skos:ConceptScheme))
+  "Alist mapping each IBIS class symbol to its parent class.
+
+Parents outside the IBIS vocabulary are opaque symbols such as
+`skos:Concept' and are not themselves IBIS classes.")
+
+(defconst ibis--disjoint
+  '((issue . position)
+    (position . argument))
+  "Unordered pairs of IBIS classes that cannot share an instance.")
+
+(defun ibis-class-p (class)
+  "Return non-nil when CLASS is a class of the IBIS vocabulary."
+  (and (assq class ibis--classes) t))
+
+(defun ibis-class-parent (class)
+  "Return the parent of CLASS, or nil when CLASS is not an IBIS class."
+  (cdr (assq class ibis--classes)))
+
+(defun ibis-subclass-p (sub super)
+  "Return non-nil when SUB is SUPER or descends from it."
+  (or (eq sub super)
+      (let ((parent (ibis-class-parent sub)))
+        (and parent (ibis-subclass-p parent super)))))
+
+(defun ibis-disjoint-p (class other)
+  "Return non-nil when CLASS and OTHER are declared disjoint."
+  (and (or (member (cons class other) ibis--disjoint)
+           (member (cons other class) ibis--disjoint))
+       t))
+
 (provide 'ibis)
 
 ;;; ibis.el ends here
