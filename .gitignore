@@ -1,0 +1,6 @@
+*.elc
+/dev/elpa/
+/dev/eln-cache/
+/dev/auto-save-list/
+/test/.run/
+make_output.log

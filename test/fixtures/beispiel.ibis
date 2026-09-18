@@ -1,0 +1,46 @@
+? I-1: Wie werden Bedingung und Termin verständlich?
+  → Bestehende Formen nur umbenennen
+    - Klärt Voraussetzungen und Ausfall nicht.
+  → Zustandserfüllung und automatischen Termin getrennt verwalten
+    + Termin kann verfallen; spätere Spielerhandlung bleibt möglich.
+
+? I-2: Müssen Seiten dafür ausführbarer Code werden?
+  → Datenformen erzeugen Beobachter und Timer #prüfen
+    + Abhängigkeiten und Schreibungen bleiben sichtbar.
+  → Eingeschränkte Factories erzeugen dieselben Daten #prüfen
+    + Helper und REPL, ohne freie Laufzeit-Callbacks.
+  → Freie Laufzeit-Callbacks
+    + Flexible Komposition.
+    - Verborgene Abhängigkeiten, Seiteneffekte und Closure-Zustand.
+
+? I-3: Was soll Tangle leisten?
+  → Datenformen in einer Datei sammeln
+    + Ein Artefakt; die Ausführung bleibt beim Interpreter.
+  → Ausführbaren Einstieg mit kontrolliertem Kontext erzeugen
+    + Aufbau und Untersuchung in der REPL.
+    - Braucht Bindungen, Quoting oder Makros; eval allein reicht nicht.
+
+? I-4: Was deaktiviert die Spielerübernahme?
+  → Alle Ereignisse, die den Helden betreffen
+    - Verhindert Krankheit, Treffer und gespielten Fortschritt.
+  → Nur fällige automatische eigene Handlungen #Empfehlung
+    + Weltfolgen und Zustandsbeobachter bleiben aktiv.
+    → Verpasste Handlung nicht automatisch nachholen #festgehalten
+    ? Ausfall aufzeichnen oder aus Übernahmegeschichte herleiten?
+    ? Wie werden Reihenfolge und gemischte Ereignisse behandelt?
+
+? I-5: Was teilen Eingabe, Dialog und Szene?
+  → Gemeinsame Handlung, gegebenenfalls verschiedene Adapter
+    + Ein Vokabular und ein fachlicher Vertrag.
+    → Nur UI-Feedback verschieben #prüfen
+      + Weltwirkung bleibt sofort lesbar.
+    → Weltwirkung bis Szenenende verschieben
+      - Ändert Folgehandlungen und Verhalten bei Abbruch.
+
+? I-6: Wie läuft die Welt weiterhin ohne Engine?
+  → Automatische Entsprechung mit Termin und Voraussetzungen
+    + Vollständiger grober Lebenslauf.
+    - Voraussetzungen mit dem gespielten Weg konsistent halten.
+  → Szenen auch als automatische Weltsteuerung ausführen
+    + Weniger doppelte Ablaufbeschreibung.
+    - Darf keine versteckte Engine oder Spielereingabe voraussetzen.
