@@ -237,6 +237,34 @@
   (should (eq (keymap-lookup ibis-mode-map "C-c -") #'ibis-insert-con))
   (should (eq (keymap-lookup ibis-mode-map "C-c #") #'ibis-toggle-tag)))
 
+(defun ibis-mode-test--flymake-diagnostics ()
+  "Return the diagnostics `ibis-flymake' reports for the current buffer."
+  (let ((reported nil))
+    (ibis-flymake (lambda (diagnostics) (setq reported diagnostics)))
+    reported))
+
+(ert-deftest ibis-mode-test-flymake-reports-a-diagnostic ()
+  (ibis-mode-test--with-buffer "? a\n  + b\n"
+    (let ((diagnostics (ibis-mode-test--flymake-diagnostics)))
+      (should (= (length diagnostics) 1))
+      (should (= (flymake-diagnostic-beg (car diagnostics)) 5))
+      (should (= (flymake-diagnostic-end (car diagnostics)) 10))
+      (should (eq (flymake-diagnostic-type (car diagnostics)) :error))
+      (should (equal (flymake-diagnostic-text (car diagnostics))
+                     "Argument must support a position")))))
+
+(ert-deftest ibis-mode-test-flymake-accepts-the-fixture ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (should-not (ibis-mode-test--flymake-diagnostics))))
+
+(ert-deftest ibis-mode-test-flymake-is-a-buffer-local-backend ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (should (memq #'ibis-flymake flymake-diagnostic-functions))
+    (should (local-variable-p 'flymake-diagnostic-functions))))
+
+(ert-deftest ibis-mode-test-check-is-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "C-c C-c") #'ibis-check)))
+
 (provide 'ibis-mode-test)
 
 ;;; ibis-mode-test.el ends here

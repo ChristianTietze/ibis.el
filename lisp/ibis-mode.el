@@ -17,6 +17,7 @@
 ;;; Code:
 
 (require 'ibis)
+(require 'flymake)
 (require 'imenu)
 (require 'outline)
 
@@ -278,6 +279,31 @@ TAG is a hashtag name without its leading `#'."
         (goto-char eol)
         (insert " #" tag)))))
 
+(defun ibis-flymake (report-fn &rest _)
+  "Report the parser diagnostics of the current buffer to REPORT-FN.
+
+A backend for `flymake-diagnostic-functions'."
+  (let ((buffer (current-buffer)))
+    (funcall
+     report-fn
+     (mapcar (lambda (diagnostic)
+               (let ((beg (car diagnostic)))
+                 (flymake-make-diagnostic
+                  buffer beg
+                  (save-excursion (goto-char beg) (line-end-position))
+                  :error (cdr diagnostic))))
+             (cdr (ibis-parse-buffer))))))
+
+(defun ibis-check ()
+  "Parse the buffer and show what the grammar rejects."
+  (interactive)
+  (flymake-mode 1)
+  (flymake-start)
+  (if noninteractive
+      (dolist (diagnostic (flymake-diagnostics))
+        (message "%s" (flymake-diagnostic-text diagnostic)))
+    (flymake-show-buffer-diagnostics)))
+
 (defvar-keymap ibis-mode-map
   :doc "Keymap for `ibis-mode'."
   "RET" #'ibis-newline-and-indent
@@ -285,7 +311,8 @@ TAG is a hashtag name without its leading `#'."
   "C-c >" #'ibis-insert-position
   "C-c +" #'ibis-insert-pro
   "C-c -" #'ibis-insert-con
-  "C-c #" #'ibis-toggle-tag)
+  "C-c #" #'ibis-toggle-tag
+  "C-c C-c" #'ibis-check)
 
 (defun ibis-mode--imenu-index ()
   "Return an imenu index of the top-level issues of the buffer."
@@ -318,6 +345,7 @@ nests a node under the one above it."
   (setq-local outline-regexp ibis-mode--outline-rx)
   (setq-local outline-level #'ibis-mode--outline-level)
   (setq-local imenu-create-index-function #'ibis-mode--imenu-index)
+  (add-hook 'flymake-diagnostic-functions #'ibis-flymake nil t)
   (setq-local require-final-newline t)
   (setq-local comment-start nil))
 
