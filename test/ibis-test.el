@@ -157,6 +157,100 @@
   (should-not (ibis--parse-line "?nospace"))
   (should-not (ibis--parse-line "\t? tab indent")))
 
+(defconst ibis-test--fixture
+  (expand-file-name "fixtures/beispiel.ibis"
+                    (file-name-directory (or load-file-name buffer-file-name)))
+  "Path of the German example map used by the tests.")
+
+(defun ibis-test--fixture-string ()
+  "Return the contents of `ibis-test--fixture' as a string."
+  (let ((coding-system-for-read 'utf-8))
+    (with-temp-buffer
+      (insert-file-contents ibis-test--fixture)
+      (buffer-string))))
+
+(defun ibis-test--fixture-network ()
+  "Return the network parsed from `ibis-test--fixture'."
+  (car (ibis-parse-string (ibis-test--fixture-string))))
+
+(defun ibis-test--roots (network)
+  "Return the nodes of NETWORK that have no parent."
+  (seq-remove (lambda (node) (ibis-node-parent network node))
+              (ibis-network-nodes network)))
+
+(ert-deftest ibis-test-tree-rule-lenient ()
+  (should (eq (ibis--tree-rule 'issue 'issue nil) 'specializes))
+  (should (eq (ibis--tree-rule 'issue 'position nil) 'questions))
+  (should (eq (ibis--tree-rule 'issue 'argument nil) 'questions))
+  (should (eq (ibis--tree-rule 'position 'issue nil) 'responds-to))
+  (should (eq (ibis--tree-rule 'position 'position nil) 'specializes))
+  (should (eq (ibis--tree-rule 'position 'argument nil) 'responds-to))
+  (should (eq (ibis--tree-rule 'pro 'position nil) 'supports))
+  (should (eq (ibis--tree-rule 'con 'position nil) 'opposes)))
+
+(ert-deftest ibis-test-tree-rule-errors ()
+  (should (equal (ibis--tree-rule 'pro 'issue nil)
+                 "Argument must support a position"))
+  (should (equal (ibis--tree-rule 'con 'argument nil)
+                 "Argument must support a position"))
+  (should (equal (ibis--tree-rule 'position 'position t)
+                 "Position must respond to an issue"))
+  (should (equal (ibis--tree-rule 'position 'argument t)
+                 "Position must respond to an issue")))
+
+(ert-deftest ibis-test-parse-fixture-roots ()
+  (let* ((result (ibis-parse-string (ibis-test--fixture-string)))
+         (network (car result))
+         (roots (ibis-test--roots network)))
+    (should-not (cdr result))
+    (should (= (length roots) 6))
+    (should (equal (mapcar #'ibis-node-id roots)
+                   '("I-1" "I-2" "I-3" "I-4" "I-5" "I-6")))
+    (should (seq-every-p (lambda (node) (eq (ibis-node-class node) 'issue))
+                         roots))))
+
+(ert-deftest ibis-test-parse-fixture-i4-edges ()
+  (let* ((network (ibis-test--fixture-network))
+         (from (ibis-node-beg (ibis-network-node-by-id network "I-4")))
+         (to (ibis-node-beg (ibis-network-node-by-id network "I-5")))
+         (edges (seq-filter
+                 (lambda (edge)
+                   (let ((beg (ibis-node-beg (ibis-edge-subject edge))))
+                     (and (> beg from) (< beg to))))
+                 (ibis-network-edges network))))
+    (should (equal (mapcar #'ibis-edge-predicate edges)
+                   '(responds-to opposes responds-to supports specializes
+                                 questions questions)))))
+
+(ert-deftest ibis-test-parse-fixture-tags ()
+  (let* ((network (ibis-test--fixture-network))
+         (tagged (seq-filter #'ibis-node-tags (ibis-network-nodes network))))
+    (should (equal (mapcar #'ibis-node-tags tagged)
+                   '(("prüfen") ("prüfen") ("Empfehlung") ("festgehalten")
+                     ("prüfen"))))))
+
+(ert-deftest ibis-test-parse-fixture-node-beg-is-line-start ()
+  (let* ((text (ibis-test--fixture-string))
+         (network (car (ibis-parse-string text))))
+    (with-temp-buffer
+      (insert text)
+      (dolist (node (ibis-network-nodes network))
+        (goto-char (ibis-node-beg node))
+        (should (bolp))
+        (should (string-search
+                 (ibis-node-text node)
+                 (buffer-substring-no-properties (line-beginning-position)
+                                                 (line-end-position))))))))
+
+(ert-deftest ibis-test-fixture-edges-are-legal ()
+  (let ((network (ibis-test--fixture-network)))
+    (should (ibis-network-edges network))
+    (dolist (edge (ibis-network-edges network))
+      (should (ibis-relation-legal-p
+               (ibis-node-class (ibis-edge-subject edge))
+               (ibis-edge-predicate edge)
+               (ibis-node-class (ibis-edge-object edge)))))))
+
 (provide 'ibis-test)
 
 ;;; ibis-test.el ends here

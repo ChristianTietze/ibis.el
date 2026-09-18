@@ -278,6 +278,89 @@ The plist has the keys :column, :marker, :id, :text and :tags."
           :text (string-trim (match-string 4 line))
           :tags (ibis--parse-tags (match-string 5 line)))))
 
+(defcustom ibis-strict-grammar nil
+  "Non-nil enforces Conklin's stricter nesting rules while parsing.
+
+Under it a position may only respond to an issue; the lenient
+default also reads a position nested under a position or argument."
+  :type 'boolean
+  :group 'ibis)
+
+(defconst ibis--argument-error "Argument must support a position"
+  "Diagnostic for an argument nested anywhere but under a position.")
+
+(defconst ibis--position-error "Position must respond to an issue"
+  "Diagnostic for a position nested under a non-issue in strict mode.")
+
+(defun ibis--tree-rule (marker parent-class strict)
+  "Return the predicate relating a MARKER child to its PARENT-CLASS parent.
+
+Return a diagnostic message string instead when the nesting is not
+allowed.  STRICT non-nil applies `ibis-strict-grammar' semantics."
+  (pcase (cons marker parent-class)
+    ('(issue . issue) 'specializes)
+    ('(issue . position) 'questions)
+    ('(issue . argument) 'questions)
+    ('(position . issue) 'responds-to)
+    ('(position . position) (if strict ibis--position-error 'specializes))
+    ('(position . argument) (if strict ibis--position-error 'responds-to))
+    ('(pro . position) 'supports)
+    ('(con . position) 'opposes)
+    (_ ibis--argument-error)))
+
+(defun ibis-parse-buffer ()
+  "Parse the current buffer and return a cons of network and diagnostics.
+
+Diagnostics are an alist of (POSITION . MESSAGE) in document order."
+  (let ((network (make-ibis-network))
+        (stack nil)
+        (diagnostics nil))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let* ((beg (line-beginning-position))
+               (line (buffer-substring-no-properties beg (line-end-position))))
+          (unless (string-blank-p line)
+            (let ((parsed (ibis--parse-line line)))
+              (if (null parsed)
+                  (push (cons beg "Not an IBIS line") diagnostics)
+                (let* ((column (plist-get parsed :column))
+                       (marker (plist-get parsed :marker))
+                       (node (ibis-network-add-node
+                              network
+                              (make-ibis-node
+                               :id (plist-get parsed :id)
+                               :class (ibis--marker-class marker)
+                               :text (plist-get parsed :text)
+                               :tags (plist-get parsed :tags)
+                               :beg beg))))
+                  (while (and stack (>= (caar stack) column))
+                    (pop stack))
+                  (cond
+                   ((zerop column)
+                    (unless (eq marker 'issue)
+                      (push (cons beg "Top-level node must be an issue")
+                            diagnostics)))
+                   ((null stack)
+                    (push (cons beg "Indented line has no parent") diagnostics))
+                   (t
+                    (let* ((parent (cdar stack))
+                           (rule (ibis--tree-rule marker
+                                                  (ibis-node-class parent)
+                                                  ibis-strict-grammar)))
+                      (if (stringp rule)
+                          (push (cons beg rule) diagnostics)
+                        (ibis-network-add-edge network node rule parent)))))
+                  (push (cons column node) stack))))))
+        (forward-line 1)))
+    (cons network (nreverse diagnostics))))
+
+(defun ibis-parse-string (string)
+  "Parse STRING as an IBIS document and return a cons of network and diagnostics."
+  (with-temp-buffer
+    (insert string)
+    (ibis-parse-buffer)))
+
 (provide 'ibis)
 
 ;;; ibis.el ends here
