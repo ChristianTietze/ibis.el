@@ -166,6 +166,77 @@
 (ert-deftest ibis-mode-test-return-is-bound ()
   (should (eq (keymap-lookup ibis-mode-map "RET") #'ibis-newline-and-indent)))
 
+(ert-deftest ibis-mode-test-node-at-point ()
+  (ibis-mode-test--with-buffer "? a\n  → I-2: b #x\n"
+    (forward-line 1)
+    (let ((node (ibis-mode--node-at-point)))
+      (should (= (plist-get node :column) 2))
+      (should (eq (plist-get node :marker) 'position))
+      (should (equal (plist-get node :id) "I-2"))
+      (should (= (plist-get node :beg) (line-beginning-position))))))
+
+(ert-deftest ibis-mode-test-node-at-point-on-plain-line ()
+  (ibis-mode-test--with-buffer "plain\n"
+    (should-not (ibis-mode--node-at-point))))
+
+(ert-deftest ibis-mode-test-insert-pro-after-subtree ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (forward-line 1)
+    (ibis-insert-pro)
+    (should (equal (buffer-substring-no-properties
+                    (line-beginning-position) (line-end-position))
+                   "    + "))
+    (should (= (point) (line-end-position)))
+    (forward-line -1)
+    (should (equal (buffer-substring-no-properties
+                    (line-beginning-position) (line-end-position))
+                   "    - Klärt Voraussetzungen und Ausfall nicht."))))
+
+(ert-deftest ibis-mode-test-insert-pro-under-issue-is-an-error ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (should-error (ibis-insert-pro) :type 'user-error)))
+
+(ert-deftest ibis-mode-test-insert-position-and-issue ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (ibis-insert-position)
+    (should (equal (buffer-string) "? a\n  → \n"))
+    (ibis-insert-issue)
+    (should (equal (buffer-string) "? a\n  → \n    ? \n"))))
+
+(ert-deftest ibis-mode-test-insert-con-under-position ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n? c\n"
+    (forward-line 1)
+    (ibis-insert-con)
+    (should (equal (buffer-string) "? a\n  → b\n    - \n? c\n"))))
+
+(ert-deftest ibis-mode-test-insert-on-plain-line-is-an-error ()
+  (ibis-mode-test--with-buffer "plain\n"
+    (should-error (ibis-insert-issue) :type 'user-error)))
+
+(ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (ibis-toggle-tag "x")
+    (should (equal (buffer-string) "? a #x\n"))
+    (ibis-toggle-tag "x")
+    (should (equal (buffer-string) "? a\n"))))
+
+(ert-deftest ibis-mode-test-toggle-tag-keeps-neighbours ()
+  (ibis-mode-test--with-buffer "? a #x #y\n"
+    (ibis-toggle-tag "x")
+    (should (equal (buffer-string) "? a #y\n"))))
+
+(ert-deftest ibis-mode-test-tags-in-buffer ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (should (equal (ibis-mode--tags-in-buffer)
+                   '("prüfen" "Empfehlung" "festgehalten")))))
+
+(ert-deftest ibis-mode-test-insert-commands-are-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "C-c ?") #'ibis-insert-issue))
+  (should (eq (keymap-lookup ibis-mode-map "C-c >") #'ibis-insert-position))
+  (should (eq (keymap-lookup ibis-mode-map "C-c +") #'ibis-insert-pro))
+  (should (eq (keymap-lookup ibis-mode-map "C-c -") #'ibis-insert-con))
+  (should (eq (keymap-lookup ibis-mode-map "C-c #") #'ibis-toggle-tag)))
+
 (provide 'ibis-mode-test)
 
 ;;; ibis-mode-test.el ends here

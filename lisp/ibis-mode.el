@@ -61,6 +61,10 @@
   "Face for a status hashtag."
   :group 'ibis)
 
+(defconst ibis-mode--hashtag-rx
+  (rx (or bol " ") (group "#" (one-or-more (not (in " \n#")))))
+  "Regexp matching a hashtag, capturing it with its leading `#'.")
+
 (defconst ibis-mode--font-lock-keywords
   `((,(rx bol (zero-or-more " ")
           (group "?")
@@ -102,8 +106,7 @@
      (1 'ibis-con-marker-face)
      (2 'ibis-id-face nil t)
      (3 'ibis-con-face))
-    (,(rx (or bol " ") (group "#" (one-or-more (not (in " #")))))
-     (1 'ibis-hashtag-face prepend)))
+    (,ibis-mode--hashtag-rx (1 'ibis-hashtag-face prepend)))
   "Font lock keywords highlighting marker, identifier, prose and hashtags.")
 
 (defconst ibis-mode--outline-rx
@@ -180,9 +183,109 @@ command cycles through child and ancestor indentations."
     (newline)
     (indent-line-to indent)))
 
+(defconst ibis-mode--insert-markers
+  '((issue . "?")
+    (position . "→")
+    (pro . "+")
+    (con . "-"))
+  "Alist mapping a marker symbol to the marker string written for it.")
+
+(defun ibis-mode--node-at-point ()
+  "Return the node line at point as a plist, or nil when there is none.
+
+The plist is that of `ibis--parse-line' extended by :beg, the
+position the line starts at."
+  (let* ((beg (line-beginning-position))
+         (parsed (ibis--parse-line
+                  (buffer-substring-no-properties
+                   beg (line-end-position)))))
+    (and parsed (append parsed (list :beg beg)))))
+
+(defun ibis-mode--subtree-end (node)
+  "Return the position just after the subtree of NODE."
+  (save-excursion
+    (goto-char (plist-get node :beg))
+    (forward-line 1)
+    (while (and (not (eobp))
+                (> (ibis-mode--indentation) (plist-get node :column)))
+      (forward-line 1))
+    (point)))
+
+(defun ibis-mode--insert-child (marker)
+  "Insert a child line with MARKER under the node at point.
+
+Signal a `user-error' when point is not on a node line, or when
+the grammar forbids MARKER under it."
+  (let* ((node (or (ibis-mode--node-at-point)
+                   (user-error "No IBIS node at point")))
+         (rule (ibis--tree-rule
+                marker
+                (ibis--marker-class (plist-get node :marker))
+                ibis-strict-grammar))
+         (indent (+ (plist-get node :column) 2))
+         (end (ibis-mode--subtree-end node)))
+    (when (stringp rule)
+      (user-error "%s" rule))
+    (goto-char end)
+    (unless (bolp)
+      (insert "\n"))
+    (insert (make-string indent ?\s)
+            (cdr (assq marker ibis-mode--insert-markers))
+            " \n")
+    (forward-char -1)))
+
+(defun ibis-insert-issue ()
+  "Insert a new issue under the node at point."
+  (interactive)
+  (ibis-mode--insert-child 'issue))
+
+(defun ibis-insert-position ()
+  "Insert a new position under the node at point."
+  (interactive)
+  (ibis-mode--insert-child 'position))
+
+(defun ibis-insert-pro ()
+  "Insert a new supporting argument under the node at point."
+  (interactive)
+  (ibis-mode--insert-child 'pro))
+
+(defun ibis-insert-con ()
+  "Insert a new opposing argument under the node at point."
+  (interactive)
+  (ibis-mode--insert-child 'con))
+
+(defun ibis-mode--tags-in-buffer ()
+  "Return the hashtag names used in the buffer, in order of first use."
+  (let ((tags nil))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward ibis-mode--hashtag-rx nil t)
+        (push (substring (match-string-no-properties 1) 1) tags)))
+    (delete-dups (nreverse tags))))
+
+(defun ibis-toggle-tag (tag)
+  "Add TAG to the line at point, or remove it when it is already there.
+
+TAG is a hashtag name without its leading `#'."
+  (interactive (list (completing-read "Tag: " (ibis-mode--tags-in-buffer))))
+  (save-excursion
+    (let ((pattern (rx-to-string `(seq " #" (literal ,tag) (or " " eol)) t))
+          (eol (line-end-position)))
+      (goto-char (line-beginning-position))
+      (if (re-search-forward pattern eol t)
+          (delete-region (match-beginning 0)
+                         (+ (match-beginning 0) 2 (length tag)))
+        (goto-char eol)
+        (insert " #" tag)))))
+
 (defvar-keymap ibis-mode-map
   :doc "Keymap for `ibis-mode'."
-  "RET" #'ibis-newline-and-indent)
+  "RET" #'ibis-newline-and-indent
+  "C-c ?" #'ibis-insert-issue
+  "C-c >" #'ibis-insert-position
+  "C-c +" #'ibis-insert-pro
+  "C-c -" #'ibis-insert-con
+  "C-c #" #'ibis-toggle-tag)
 
 (defun ibis-mode--imenu-index ()
   "Return an imenu index of the top-level issues of the buffer."
