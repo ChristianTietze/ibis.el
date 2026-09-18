@@ -223,10 +223,14 @@ IBIS property name."
   (seq-find (lambda (node) (equal (ibis-node-id node) id))
             (ibis-network-nodes network)))
 
+(defun ibis--node-edge (network node)
+  "Return the edge attaching NODE to its parent in NETWORK, or nil."
+  (seq-find (lambda (edge) (eq (ibis-edge-subject edge) node))
+            (ibis-network-edges network)))
+
 (defun ibis-node-parent (network node)
   "Return the node NODE attaches to in NETWORK, or nil when it is a root."
-  (let ((edge (seq-find (lambda (edge) (eq (ibis-edge-subject edge) node))
-                        (ibis-network-edges network))))
+  (let ((edge (ibis--node-edge network node)))
     (and edge (ibis-edge-object edge))))
 
 (defun ibis-node-children (network node)
@@ -360,6 +364,34 @@ Diagnostics are an alist of (POSITION . MESSAGE) in document order."
   (with-temp-buffer
     (insert string)
     (ibis-parse-buffer)))
+
+(defun ibis--node-marker (network node)
+  "Return the marker string written for NODE in NETWORK."
+  (pcase (ibis-node-class node)
+    ('issue "?")
+    ('position "→")
+    (_ (let ((edge (ibis--node-edge network node)))
+         (if (eq (and edge (ibis-edge-predicate edge)) 'opposes) "-" "+")))))
+
+(defun ibis--serialize-node (network node depth)
+  "Return the lines for NODE and its children in NETWORK, indented by DEPTH."
+  (apply #'concat
+         (concat (make-string (* 2 depth) ?\s)
+                 (ibis--node-marker network node) " "
+                 (if (ibis-node-id node) (concat (ibis-node-id node) ": ") "")
+                 (ibis-node-text node)
+                 (mapconcat (lambda (tag) (concat " #" tag))
+                            (ibis-node-tags node) "")
+                 "\n")
+         (mapcar (lambda (child) (ibis--serialize-node network child (1+ depth)))
+                 (ibis-node-children network node))))
+
+(defun ibis-serialize (network)
+  "Return the `.ibis' text of NETWORK, one blank line between its roots."
+  (mapconcat (lambda (root) (ibis--serialize-node network root 0))
+             (seq-remove (lambda (node) (ibis-node-parent network node))
+                         (ibis-network-nodes network))
+             "\n"))
 
 (provide 'ibis)
 

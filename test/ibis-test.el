@@ -291,6 +291,27 @@
     (should (equal (mapcar #'car diagnostics)
                    (sort (mapcar #'car diagnostics) #'<)))))
 
+(defun ibis-test--round-trip (string)
+  "Return STRING parsed into a network and serialized back."
+  (ibis-serialize (car (ibis-parse-string string))))
+
+(ert-deftest ibis-test-serialize-normalizes-markers ()
+  (should (equal (ibis-test--round-trip "? a\n  -> b") "? a\n  → b\n")))
+
+(ert-deftest ibis-test-serialize-omits-absent-ids ()
+  (should (equal (ibis-test--round-trip "? I-1: a\n  → b\n    + c\n    - d")
+                 "? I-1: a\n  → b\n    + c\n    - d\n")))
+
+(ert-deftest ibis-test-serialize-appends-tags ()
+  (should (equal (ibis-test--round-trip "? a #x #y") "? a #x #y\n")))
+
+(ert-deftest ibis-test-serialize-separates-roots-with-blank-line ()
+  (should (equal (ibis-test--round-trip "? a\n\n? b") "? a\n\n? b\n")))
+
+(ert-deftest ibis-test-serialize-round-trips-the-fixture ()
+  (let ((text (ibis-test--fixture-string)))
+    (should (equal (ibis-test--round-trip text) text))))
+
 (provide 'ibis-test)
 
 ;;; ibis-test.el ends here
