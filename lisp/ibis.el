@@ -162,6 +162,28 @@ it specializes."
   "Return the preferred direction of property NAME, NAME itself by default."
   (or (cdr (assq name ibis--preferred)) name))
 
+(defconst ibis--legality
+  '(((issue . issue)
+     . (generalizes specializes suggests suggested-by questions questioned-by))
+    ((issue . position) . (response suggested-by questions))
+    ((issue . argument) . (suggests suggested-by questions questioned-by))
+    ((position . issue) . (responds-to suggests questioned-by))
+    ((position . position) . (generalizes specializes))
+    ((position . argument) . (supported-by opposed-by responds-to))
+    ((argument . issue) . (suggests suggested-by questions questioned-by))
+    ((argument . position) . (supports opposes questions suggested-by response))
+    ((argument . argument)
+     . (generalizes specializes suggests suggested-by questions questioned-by)))
+  "Alist mapping a (SUBJECT . OBJECT) class pair to the properties joining them.")
+
+(defun ibis-legal-properties (subject object)
+  "Return the properties that may relate a SUBJECT class to an OBJECT class."
+  (cdr (assoc (cons subject object) ibis--legality)))
+
+(defun ibis-relation-legal-p (subject predicate object)
+  "Return non-nil when PREDICATE may relate class SUBJECT to class OBJECT."
+  (and (memq predicate (ibis-legal-properties subject object)) t))
+
 (provide 'ibis)
 
 ;;; ibis.el ends here

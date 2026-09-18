@@ -69,6 +69,27 @@
       (should (eq (ibis-property-domain back) (ibis-property-range prop)))
       (should (eq (ibis-property-range back) (ibis-property-domain prop))))))
 
+(ert-deftest ibis-test-legal-properties ()
+  (should (equal (ibis-legal-properties 'position 'argument)
+                 '(supported-by opposed-by responds-to)))
+  (should (equal (ibis-legal-properties 'position 'position)
+                 '(generalizes specializes)))
+  (should-not (ibis-legal-properties 'network 'issue)))
+
+(ert-deftest ibis-test-relation-legal-p ()
+  (should (ibis-relation-legal-p 'argument 'supports 'position))
+  (should (ibis-relation-legal-p 'position 'responds-to 'issue))
+  (should-not (ibis-relation-legal-p 'issue 'supports 'position))
+  (should-not (ibis-relation-legal-p 'position 'supports 'argument)))
+
+(ert-deftest ibis-test-legality-respects-domain-and-range ()
+  (pcase-dolist (`((,subject . ,object) . ,names) ibis--legality)
+    (dolist (name names)
+      (let ((prop (ibis-property name)))
+        (should prop)
+        (should (ibis-subclass-p subject (ibis-property-domain prop)))
+        (should (ibis-subclass-p object (ibis-property-range prop)))))))
+
 (provide 'ibis-test)
 
 ;;; ibis-test.el ends here
