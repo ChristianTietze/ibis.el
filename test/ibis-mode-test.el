@@ -9,6 +9,82 @@
 (require 'ert)
 (require 'ibis-mode)
 
+(defconst ibis-mode-test--fixture
+  (expand-file-name "fixtures/beispiel.ibis"
+                    (file-name-directory (or load-file-name buffer-file-name)))
+  "Path of the German example map used by the tests.")
+
+(defun ibis-mode-test--fixture-string ()
+  "Return the contents of `ibis-mode-test--fixture' as a string."
+  (let ((coding-system-for-read 'utf-8))
+    (with-temp-buffer
+      (insert-file-contents ibis-mode-test--fixture)
+      (buffer-string))))
+
+(defmacro ibis-mode-test--with-buffer (text &rest body)
+  "Run BODY with point at the start of an `ibis-mode' buffer holding TEXT."
+  (declare (indent 1) (debug t))
+  `(with-temp-buffer
+     (insert ,text)
+     (ibis-mode)
+     (goto-char (point-min))
+     ,@body))
+
+(defun ibis-mode-test--faces-at (position)
+  "Return the faces in effect at POSITION as a list."
+  (ensure-list (get-text-property position 'face)))
+
+(defun ibis-mode-test--faces-before (string)
+  "Return the faces in effect where STRING starts after point."
+  (search-forward string)
+  (ibis-mode-test--faces-at (match-beginning 0)))
+
+(ert-deftest ibis-mode-test-auto-mode-alist ()
+  (should (eq (cdr (assoc "\\.ibis\\'" auto-mode-alist)) 'ibis-mode)))
+
+(ert-deftest ibis-mode-test-derived-from-text-mode ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (should (derived-mode-p 'text-mode))
+    (should (equal mode-name "IBIS"))
+    (should require-final-newline)
+    (should-not comment-start)))
+
+(ert-deftest ibis-mode-test-font-lock-issue-marker ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (font-lock-ensure)
+    (should (memq 'ibis-issue-marker-face
+                  (ibis-mode-test--faces-at (point-min))))))
+
+(ert-deftest ibis-mode-test-font-lock-id ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (font-lock-ensure)
+    (should (memq 'ibis-id-face (ibis-mode-test--faces-before "I-1")))))
+
+(ert-deftest ibis-mode-test-font-lock-hashtag ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (font-lock-ensure)
+    (should (memq 'ibis-hashtag-face
+                  (ibis-mode-test--faces-before "#prüfen")))))
+
+(ert-deftest ibis-mode-test-font-lock-pro-text ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (font-lock-ensure)
+    (should (memq 'ibis-pro-face
+                  (ibis-mode-test--faces-before "Termin kann verfallen")))))
+
+(ert-deftest ibis-mode-test-font-lock-con-marker ()
+  (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
+    (font-lock-ensure)
+    (should (memq 'ibis-con-marker-face
+                  (ibis-mode-test--faces-before "- Klärt")))))
+
+(ert-deftest ibis-mode-test-font-lock-position-marker ()
+  (ibis-mode-test--with-buffer "? a\n  -> b\n"
+    (font-lock-ensure)
+    (should (memq 'ibis-position-marker-face
+                  (ibis-mode-test--faces-before "->")))
+    (should (memq 'ibis-position-face (ibis-mode-test--faces-before "b")))))
+
 (provide 'ibis-mode-test)
 
 ;;; ibis-mode-test.el ends here
