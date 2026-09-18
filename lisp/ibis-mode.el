@@ -110,17 +110,79 @@
   (rx (zero-or-more " ") ibis-marker-rx " ")
   "Regexp matching the marker that opens a node line.")
 
-(defun ibis-mode--outline-level ()
-  "Return the outline level of the line at point, counting from 1.
+(defun ibis-mode--indentation ()
+  "Return the number of leading spaces of the line at point.
 
-Indentation is counted in characters rather than columns: outline
-calls this on lines it has just hidden, whose display width is
-zero."
+Indentation is counted in characters rather than columns, so that
+lines outline has hidden, whose display width is zero, still
+report their nesting."
   (save-excursion
     (let ((beg (line-beginning-position)))
       (goto-char beg)
       (skip-chars-forward " ")
-      (1+ (/ (- (point) beg) 2)))))
+      (- (point) beg))))
+
+(defun ibis-mode--outline-level ()
+  "Return the outline level of the line at point, counting from 1."
+  (1+ (/ (ibis-mode--indentation) 2)))
+
+(defun ibis-mode--indent-candidates (prev-indent)
+  "Return the indentations a line under PREV-INDENT may take.
+
+The first is the sibling indentation, the second that of a child,
+the rest those of its ancestors down to the left margin."
+  (let ((candidates (list prev-indent (+ prev-indent 2)))
+        (ancestor (- prev-indent 2)))
+    (while (>= ancestor 0)
+      (setq candidates (append candidates (list ancestor)))
+      (setq ancestor (- ancestor 2)))
+    (delete-dups candidates)))
+
+(defun ibis-mode--previous-indentation ()
+  "Return the indentation of the last non-blank line before point, or 0."
+  (save-excursion
+    (forward-line 0)
+    (catch 'found
+      (while (not (bobp))
+        (forward-line -1)
+        (unless (looking-at-p (rx bol (zero-or-more " ") eol))
+          (throw 'found (ibis-mode--indentation))))
+      0)))
+
+(defun ibis-mode--text-beginning ()
+  "Return the position where the text of the line at point starts."
+  (+ (line-beginning-position) (ibis-mode--indentation)))
+
+(defun ibis-mode--next-indentation (candidates current)
+  "Return the indentation following CURRENT in CANDIDATES, wrapping around."
+  (or (cadr (member current candidates)) (car candidates)))
+
+(defun ibis-indent-line ()
+  "Indent the current line under the node above it.
+
+The first invocation indents like the previous line; repeating the
+command cycles through child and ancestor indentations."
+  (interactive)
+  (let* ((candidates (ibis-mode--indent-candidates
+                      (ibis-mode--previous-indentation)))
+         (target (if (eq last-command this-command)
+                     (ibis-mode--next-indentation candidates
+                                                  (ibis-mode--indentation))
+                   (car candidates)))
+         (offset (max 0 (- (point) (ibis-mode--text-beginning)))))
+    (indent-line-to target)
+    (goto-char (+ (ibis-mode--text-beginning) offset))))
+
+(defun ibis-newline-and-indent ()
+  "Open a new line indented like the current one."
+  (interactive)
+  (let ((indent (ibis-mode--indentation)))
+    (newline)
+    (indent-line-to indent)))
+
+(defvar-keymap ibis-mode-map
+  :doc "Keymap for `ibis-mode'."
+  "RET" #'ibis-newline-and-indent)
 
 (defun ibis-mode--imenu-index ()
   "Return an imenu index of the top-level issues of the buffer."
@@ -149,6 +211,7 @@ Each line carries a marker: `?' for an issue, `→' (or `->') for a
 position, `+' and `-' for arguments.  Indentation by two spaces
 nests a node under the one above it."
   (setq-local font-lock-defaults '(ibis-mode--font-lock-keywords t))
+  (setq-local indent-line-function #'ibis-indent-line)
   (setq-local outline-regexp ibis-mode--outline-rx)
   (setq-local outline-level #'ibis-mode--outline-level)
   (setq-local imenu-create-index-function #'ibis-mode--imenu-index)

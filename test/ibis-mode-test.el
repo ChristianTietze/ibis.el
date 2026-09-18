@@ -117,6 +117,55 @@
     (let ((index (funcall imenu-create-index-function)))
       (should (equal (mapcar #'car index) '("a" "c"))))))
 
+(defun ibis-mode-test--press-tab (times)
+  "Call `ibis-indent-line' TIMES in a row, as repeated TAB presses would."
+  (let ((last-command nil)
+        (this-command 'indent-for-tab-command))
+    (dotimes (_ times)
+      (ibis-indent-line)
+      (setq last-command 'indent-for-tab-command))))
+
+(ert-deftest ibis-mode-test-indent-candidates ()
+  (should (equal (ibis-mode--indent-candidates 4) '(4 6 2 0)))
+  (should (equal (ibis-mode--indent-candidates 0) '(0 2)))
+  (should (equal (ibis-mode--indent-candidates 2) '(2 4 0))))
+
+(ert-deftest ibis-mode-test-indent-first-tab-takes-previous-indentation ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n+ c\n"
+    (goto-char (point-max))
+    (forward-line -1)
+    (ibis-mode-test--press-tab 1)
+    (should (= (current-indentation) 2))))
+
+(ert-deftest ibis-mode-test-indent-cycles-on-repeated-tab ()
+  (ibis-mode-test--with-buffer "? a\n→ b\n"
+    (forward-line 1)
+    (ibis-mode-test--press-tab 1)
+    (should (= (current-indentation) 0))
+    (ibis-mode-test--press-tab 2)
+    (should (= (current-indentation) 2))
+    (ibis-mode-test--press-tab 3)
+    (should (= (current-indentation) 0))))
+
+(ert-deftest ibis-mode-test-indent-keeps-point-on-text ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n→ cde\n"
+    (goto-char (point-max))
+    (forward-line -1)
+    (forward-char 3)
+    (ibis-mode-test--press-tab 1)
+    (should (equal (buffer-substring-no-properties (point) (line-end-position))
+                   "de"))))
+
+(ert-deftest ibis-mode-test-newline-and-indent ()
+  (ibis-mode-test--with-buffer "  → b\n"
+    (end-of-line)
+    (ibis-newline-and-indent)
+    (should (= (current-indentation) 2))
+    (should (= (point) (line-end-position)))))
+
+(ert-deftest ibis-mode-test-return-is-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "RET") #'ibis-newline-and-indent)))
+
 (provide 'ibis-mode-test)
 
 ;;; ibis-mode-test.el ends here
