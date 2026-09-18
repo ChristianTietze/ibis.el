@@ -312,6 +312,10 @@
   (let ((text (ibis-test--fixture-string)))
     (should (equal (ibis-test--round-trip text) text))))
 
+(ert-deftest ibis-test-parse-line-ignores-trailing-whitespace-after-tags ()
+  (should (equal (ibis--parse-line "? a #x  ")
+                 '(:column 0 :marker issue :id nil :text "a" :tags ("x")))))
+
 (provide 'ibis-test)
 
 ;;; ibis-test.el ends here

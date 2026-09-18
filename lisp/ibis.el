@@ -257,6 +257,7 @@ IBIS property name."
       (opt (group (one-or-more (in alnum ?- ?_ ?.))) ":" (zero-or-more " "))
       (group (minimal-match (zero-or-more nonl)))
       (group (zero-or-more " #" (one-or-more (not (in " \t")))))
+      (zero-or-more " ")
       eol)
   "Regexp matching one line of an `.ibis' file.
 
