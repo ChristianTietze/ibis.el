@@ -251,6 +251,46 @@
                (ibis-edge-predicate edge)
                (ibis-node-class (ibis-edge-object edge)))))))
 
+(ert-deftest ibis-test-diagnostic-argument-under-issue ()
+  (let ((diagnostics (cdr (ibis-parse-string "? a\n  + b"))))
+    (should (equal diagnostics '((5 . "Argument must support a position"))))))
+
+(ert-deftest ibis-test-diagnostic-top-level-must-be-issue ()
+  (should (equal (cdr (ibis-parse-string "→ a"))
+                 '((1 . "Top-level node must be an issue")))))
+
+(ert-deftest ibis-test-diagnostic-indented-without-parent ()
+  (should (equal (cdr (ibis-parse-string "  ? a"))
+                 '((1 . "Indented line has no parent")))))
+
+(ert-deftest ibis-test-diagnostic-not-an-ibis-line ()
+  (should (equal (cdr (ibis-parse-string "? a\nplain"))
+                 '((5 . "Not an IBIS line")))))
+
+(ert-deftest ibis-test-erroneous-node-is-still-a-parent ()
+  (let* ((result (ibis-parse-string "→ a\n  + b"))
+         (network (car result)))
+    (should (= (length (cdr result)) 1))
+    (should (= (length (ibis-network-nodes network)) 2))
+    (should (equal (mapcar #'ibis-edge-predicate (ibis-network-edges network))
+                   '(supports)))))
+
+(ert-deftest ibis-test-erroneous-node-gets-no-edge ()
+  (let ((network (car (ibis-parse-string "? a\n  + b"))))
+    (should (= (length (ibis-network-nodes network)) 2))
+    (should-not (ibis-network-edges network))))
+
+(ert-deftest ibis-test-strict-grammar-flags-nested-positions ()
+  (let* ((ibis-strict-grammar t)
+         (result (ibis-parse-string (ibis-test--fixture-string)))
+         (diagnostics (cdr result)))
+    (should (= (length diagnostics) 3))
+    (should (seq-every-p (lambda (entry)
+                           (equal (cdr entry) "Position must respond to an issue"))
+                         diagnostics))
+    (should (equal (mapcar #'car diagnostics)
+                   (sort (mapcar #'car diagnostics) #'<)))))
+
 (provide 'ibis-test)
 
 ;;; ibis-test.el ends here
