@@ -130,6 +130,33 @@
     (should (eq (ibis-edge-subject edge) (nth 1 (ibis-network-nodes network))))
     (should (eq (ibis-edge-object edge) (nth 0 (ibis-network-nodes network))))))
 
+(ert-deftest ibis-test-parse-line-position ()
+  (should (equal (ibis--parse-line "  \u2192 Ja")
+                 '(:column 2 :marker position :id nil :text "Ja" :tags nil)))
+  (should (equal (ibis--parse-line "-> x")
+                 '(:column 0 :marker position :id nil :text "x" :tags nil))))
+
+(ert-deftest ibis-test-parse-line-id-and-tags ()
+  (should (equal (ibis--parse-line "? I-1: Wie denn? #pr\u00fcfen #Empfehlung")
+                 '(:column 0 :marker issue :id "I-1" :text "Wie denn?"
+                           :tags ("pr\u00fcfen" "Empfehlung")))))
+
+(ert-deftest ibis-test-parse-line-argument-markers ()
+  (should (eq (plist-get (ibis--parse-line "    + Gut.") :marker) 'pro))
+  (should (eq (plist-get (ibis--parse-line "    - Schlecht.") :marker) 'con))
+  (should (= (plist-get (ibis--parse-line "    - Schlecht.") :column) 4)))
+
+(ert-deftest ibis-test-parse-line-hash-inside-text-is-text ()
+  (should (equal (plist-get (ibis--parse-line "? Was ist #1 wert?") :text)
+                 "Was ist #1 wert?"))
+  (should-not (plist-get (ibis--parse-line "? Was ist #1 wert?") :tags)))
+
+(ert-deftest ibis-test-parse-line-rejects-non-ibis-lines ()
+  (should-not (ibis--parse-line "foo"))
+  (should-not (ibis--parse-line ""))
+  (should-not (ibis--parse-line "?nospace"))
+  (should-not (ibis--parse-line "\t? tab indent")))
+
 (provide 'ibis-test)
 
 ;;; ibis-test.el ends here

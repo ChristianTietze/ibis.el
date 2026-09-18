@@ -235,6 +235,49 @@ IBIS property name."
           (seq-filter (lambda (edge) (eq (ibis-edge-object edge) node))
                       (ibis-network-edges network))))
 
+(rx-define ibis-marker-rx (or "?" "→" "->" "+" "-"))
+
+(defconst ibis--markers
+  '(("?" . issue)
+    ("→" . position)
+    ("->" . position)
+    ("+" . pro)
+    ("-" . con))
+  "Alist mapping a line marker to its marker symbol.")
+
+(defconst ibis--line-rx
+  (rx bol
+      (group (zero-or-more " "))
+      (group ibis-marker-rx)
+      (one-or-more " ")
+      (opt (group (one-or-more (in alnum ?- ?_ ?.))) ":" (zero-or-more " "))
+      (group (minimal-match (zero-or-more nonl)))
+      (group (zero-or-more " #" (one-or-more (not (in " \t")))))
+      eol)
+  "Regexp matching one line of an `.ibis' file.
+
+The groups are indent, marker, identifier, text and trailing hashtags.")
+
+(defun ibis--marker-class (marker)
+  "Return the IBIS class a MARKER symbol denotes."
+  (if (memq marker '(pro con)) 'argument marker))
+
+(defun ibis--parse-tags (string)
+  "Return the hashtags in STRING as a list of names without the `#'."
+  (mapcar (lambda (tag) (substring tag 1))
+          (split-string (or string "") " " t)))
+
+(defun ibis--parse-line (line)
+  "Return a plist describing LINE, or nil when LINE is not an IBIS line.
+
+The plist has the keys :column, :marker, :id, :text and :tags."
+  (when (string-match ibis--line-rx line)
+    (list :column (length (match-string 1 line))
+          :marker (cdr (assoc (match-string 2 line) ibis--markers))
+          :id (match-string 3 line)
+          :text (string-trim (match-string 4 line))
+          :tags (ibis--parse-tags (match-string 5 line)))))
+
 (provide 'ibis)
 
 ;;; ibis.el ends here
