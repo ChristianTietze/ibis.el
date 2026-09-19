@@ -213,6 +213,27 @@
   (ibis-mode-test--with-buffer "plain\n"
     (should-error (ibis-insert-issue) :type 'user-error)))
 
+(ert-deftest ibis-mode-test-insert-sibling-keeps-marker-and-indent ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + c\n"
+    (forward-line 1)
+    (ibis-insert-sibling)
+    (should (equal (buffer-string) "? a\n  \u2192 b\n    + c\n  \u2192 \n"))
+    (should (equal (buffer-substring-no-properties
+                    (line-beginning-position) (point))
+                   "  \u2192 "))))
+
+(ert-deftest ibis-mode-test-insert-sibling-separates-top-level-blocks ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (ibis-insert-sibling)
+    (should (equal (buffer-string) "? a\n\n? \n"))))
+
+(ert-deftest ibis-mode-test-insert-sibling-on-blank-line-is-an-error ()
+  (ibis-mode-test--with-buffer "\n"
+    (should-error (ibis-insert-sibling) :type 'user-error)))
+
+(ert-deftest ibis-mode-test-insert-sibling-is-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "M-RET") #'ibis-insert-sibling)))
+
 (ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
   (ibis-mode-test--with-buffer "? a\n"
     (ibis-toggle-tag "x")

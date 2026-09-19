@@ -212,6 +212,22 @@ position the line starts at."
       (forward-line 1))
     (point)))
 
+(defun ibis-mode--insert-line (node indent marker blank)
+  "Insert a line with MARKER at INDENT after the subtree of NODE.
+
+BLANK non-nil precedes the line with an empty one, the way the
+serializer separates top-level blocks.  Leave point after the
+marker."
+  (goto-char (ibis-mode--subtree-end node))
+  (unless (bolp)
+    (insert "\n"))
+  (when blank
+    (insert "\n"))
+  (insert (make-string indent ?\s)
+          (cdr (assq marker ibis-mode--insert-markers))
+          " \n")
+  (forward-char -1))
+
 (defun ibis-mode--insert-child (marker)
   "Insert a child line with MARKER under the node at point.
 
@@ -222,18 +238,21 @@ the grammar forbids MARKER under it."
          (rule (ibis--tree-rule
                 marker
                 (ibis--marker-class (plist-get node :marker))
-                ibis-strict-grammar))
-         (indent (+ (plist-get node :column) 2))
-         (end (ibis-mode--subtree-end node)))
+                ibis-strict-grammar)))
     (when (stringp rule)
       (user-error "%s" rule))
-    (goto-char end)
-    (unless (bolp)
-      (insert "\n"))
-    (insert (make-string indent ?\s)
-            (cdr (assq marker ibis-mode--insert-markers))
-            " \n")
-    (forward-char -1)))
+    (ibis-mode--insert-line node (+ (plist-get node :column) 2) marker nil)))
+
+(defun ibis-insert-sibling ()
+  "Insert a sibling of the node at point after that node's subtree.
+
+Signal a `user-error' when point is not on a node line."
+  (interactive)
+  (let* ((node (or (ibis-mode--node-at-point)
+                   (user-error "No IBIS node at point")))
+         (column (plist-get node :column)))
+    (ibis-mode--insert-line node column (plist-get node :marker)
+                            (zerop column))))
 
 (defun ibis-insert-issue ()
   "Insert a new issue under the node at point."
@@ -307,6 +326,7 @@ A backend for `flymake-diagnostic-functions'."
 (defvar-keymap ibis-mode-map
   :doc "Keymap for `ibis-mode'."
   "RET" #'ibis-newline-and-indent
+  "M-RET" #'ibis-insert-sibling
   "C-c ?" #'ibis-insert-issue
   "C-c >" #'ibis-insert-position
   "C-c +" #'ibis-insert-pro
