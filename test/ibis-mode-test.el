@@ -214,13 +214,13 @@
     (should-error (ibis-insert-issue) :type 'user-error)))
 
 (ert-deftest ibis-mode-test-insert-sibling-keeps-marker-and-indent ()
-  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + c\n"
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n"
     (forward-line 1)
     (ibis-insert-sibling)
-    (should (equal (buffer-string) "? a\n  \u2192 b\n    + c\n  \u2192 \n"))
+    (should (equal (buffer-string) "? a\n  → b\n    + c\n  → \n"))
     (should (equal (buffer-substring-no-properties
                     (line-beginning-position) (point))
-                   "  \u2192 "))))
+                   "  → "))))
 
 (ert-deftest ibis-mode-test-insert-sibling-separates-top-level-blocks ()
   (ibis-mode-test--with-buffer "? a\n"
@@ -237,23 +237,39 @@
 (ert-deftest ibis-mode-test-insert-child-under-issue-is-a-position ()
   (ibis-mode-test--with-buffer "? a\n"
     (ibis-insert-child)
-    (should (equal (buffer-string) "? a\n  \u2192 \n"))))
+    (should (equal (buffer-string) "? a\n  → \n"))))
 
 (ert-deftest ibis-mode-test-insert-child-under-position-is-a-pro ()
-  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n"
+  (ibis-mode-test--with-buffer "? a\n  → b\n"
     (forward-line 1)
     (ibis-insert-child)
-    (should (equal (buffer-string) "? a\n  \u2192 b\n    + \n"))))
+    (should (equal (buffer-string) "? a\n  → b\n    + \n"))))
 
 (ert-deftest ibis-mode-test-insert-child-under-argument-is-an-issue ()
-  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + c\n"
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n"
     (forward-line 2)
     (ibis-insert-child)
     (should (equal (buffer-string)
-                   "? a\n  \u2192 b\n    + c\n      ? \n"))))
+                   "? a\n  → b\n    + c\n      ? \n"))))
 
 (ert-deftest ibis-mode-test-insert-child-is-bound ()
   (should (eq (keymap-lookup ibis-mode-map "S-<return>") #'ibis-insert-child)))
+
+(defun ibis-mode-test--type (string)
+  "Insert STRING into the current buffer as if it were typed."
+  (dolist (char (string-to-list string))
+    (let ((last-command-event char))
+      (self-insert-command 1))))
+
+(ert-deftest ibis-mode-test-arrow-replaces-marker-at-line-start ()
+  (ibis-mode-test--with-buffer ""
+    (ibis-mode-test--type "  -> b")
+    (should (equal (buffer-string) "  → b"))))
+
+(ert-deftest ibis-mode-test-arrow-keeps-an-arrow-in-the-text ()
+  (ibis-mode-test--with-buffer ""
+    (ibis-mode-test--type "? A -> B")
+    (should (equal (buffer-string) "? A -> B"))))
 
 (ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
   (ibis-mode-test--with-buffer "? a\n"

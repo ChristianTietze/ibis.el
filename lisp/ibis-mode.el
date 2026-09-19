@@ -184,6 +184,21 @@ command cycles through child and ancestor indentations."
     (newline)
     (indent-line-to indent)))
 
+(defconst ibis-mode--typed-arrow-rx
+  (rx bos (zero-or-more " ") "->" eos)
+  "Regexp matching a line whose whole content so far is a `->' marker.")
+
+(defun ibis-mode--replace-typed-arrow ()
+  "Replace the `->' marker just typed at the start of a line with `→'.
+
+A function for `post-self-insert-hook'."
+  (when (and (eq last-command-event ?>)
+             (string-match-p ibis-mode--typed-arrow-rx
+                             (buffer-substring-no-properties
+                              (line-beginning-position) (point))))
+    (delete-char -2)
+    (insert "→")))
+
 (defconst ibis-mode--insert-markers
   '((issue . "?")
     (position . "→")
@@ -386,7 +401,8 @@ nests a node under the one above it."
   (setq-local imenu-create-index-function #'ibis-mode--imenu-index)
   (add-hook 'flymake-diagnostic-functions #'ibis-flymake nil t)
   (setq-local require-final-newline t)
-  (setq-local comment-start nil))
+  (setq-local comment-start nil)
+  (add-hook 'post-self-insert-hook #'ibis-mode--replace-typed-arrow nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.ibis\\'" . ibis-mode))
