@@ -111,7 +111,7 @@
   "Font lock keywords highlighting marker, identifier, prose and hashtags.")
 
 (defconst ibis-mode--blank-rx
-  (rx bol (zero-or-more " ") eol)
+  (rx bol (zero-or-more (in " \t")) eol)
   "Regexp matching a line holding nothing but whitespace.")
 
 (defconst ibis-mode--outline-rx
@@ -222,14 +222,27 @@ position the line starts at."
     (and parsed (append parsed (list :beg beg)))))
 
 (defun ibis-mode--subtree-end (node)
-  "Return the position just after the subtree of NODE."
+  "Return the position just after the subtree of NODE.
+
+Blank lines belong to the subtree when a deeper node follows them,
+so that a block kept apart for readability moves as one.  Blank
+lines trailing the subtree do not, so that the separator between
+two blocks stays between them."
   (save-excursion
     (goto-char (plist-get node :beg))
     (forward-line 1)
-    (while (and (not (eobp))
-                (> (ibis-mode--indentation) (plist-get node :column)))
-      (forward-line 1))
-    (point)))
+    (let ((end (point))
+          (column (plist-get node :column))
+          (searching t))
+      (while (and searching (not (eobp)))
+        (if (looking-at-p ibis-mode--blank-rx)
+            (forward-line 1)
+          (let ((parsed (ibis-mode--node-at-point)))
+            (if (and parsed (> (plist-get parsed :column) column))
+                (progn (forward-line 1)
+                       (setq end (point)))
+              (setq searching nil)))))
+      end)))
 
 (defun ibis-mode--insert-line (node indent marker blank)
   "Insert a line with MARKER at INDENT after the subtree of NODE.

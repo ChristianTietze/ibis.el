@@ -343,6 +343,80 @@
   (should (eq (keymap-lookup ibis-mode-map "M-<up>") #'ibis-move-up))
   (should (eq (keymap-lookup ibis-mode-map "M-<down>") #'ibis-move-down)))
 
+(defconst ibis-mode-test--split-subtree
+  "? a\n  \u2192 b\n    + c\n\n    + d\n  \u2192 e\n"
+  "A map whose second argument sits behind a blank line inside its subtree.")
+
+(defun ibis-mode-test--edges ()
+  "Return the edges of the buffer as sorted (SUBJECT PREDICATE OBJECT) triples.
+
+Subject and object are the prose of the nodes they name."
+  (sort (mapcar (lambda (edge)
+                  (list (ibis-node-text (ibis-edge-subject edge))
+                        (ibis-edge-predicate edge)
+                        (ibis-node-text (ibis-edge-object edge))))
+                (ibis-network-edges (car (ibis-parse-buffer))))
+        (lambda (a b) (string< (format "%S" a) (format "%S" b)))))
+
+(ert-deftest ibis-mode-test-blank-line-inside-a-subtree-keeps-the-parent ()
+  (ibis-mode-test--with-buffer ibis-mode-test--split-subtree
+    (should-not (cdr (ibis-parse-buffer)))
+    (should (equal (ibis-mode-test--edges)
+                   '(("b" responds-to "a")
+                     ("c" supports "b")
+                     ("d" supports "b")
+                     ("e" responds-to "a"))))))
+
+(ert-deftest ibis-mode-test-demote-takes-the-whole-split-subtree ()
+  (ibis-mode-test--with-buffer ibis-mode-test--split-subtree
+    (let ((edges (ibis-mode-test--edges)))
+      (forward-line 1)
+      (ibis-demote)
+      (should (equal (buffer-string)
+                     "? a\n    \u2192 b\n      + c\n\n      + d\n  \u2192 e\n"))
+      (should-not (cdr (ibis-parse-buffer)))
+      (should (equal (ibis-mode-test--edges) edges)))))
+
+(ert-deftest ibis-mode-test-demote-leaves-a-blank-line-of-tabs-alone ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + c\n\t\n    + d\n"
+    (forward-line 1)
+    (ibis-demote)
+    (should (equal (buffer-string)
+                   "? a\n    \u2192 b\n      + c\n\t\n      + d\n"))))
+
+(ert-deftest ibis-mode-test-move-down-takes-the-whole-split-subtree ()
+  (ibis-mode-test--with-buffer ibis-mode-test--split-subtree
+    (let ((edges (ibis-mode-test--edges)))
+      (forward-line 1)
+      (ibis-move-down)
+      (should (equal (buffer-string)
+                     "? a\n  \u2192 e\n  \u2192 b\n    + c\n\n    + d\n"))
+      (should-not (cdr (ibis-parse-buffer)))
+      (should (equal (ibis-mode-test--edges) edges)))))
+
+(ert-deftest ibis-mode-test-move-up-reverses-a-move-down-over-a-blank-line ()
+  (ibis-mode-test--with-buffer ibis-mode-test--split-subtree
+    (let ((edges (ibis-mode-test--edges)))
+      (forward-line 1)
+      (ibis-move-down)
+      (ibis-move-up)
+      (should (equal (buffer-string) ibis-mode-test--split-subtree))
+      (should-not (cdr (ibis-parse-buffer)))
+      (should (equal (ibis-mode-test--edges) edges)))))
+
+(ert-deftest ibis-mode-test-insert-sibling-lands-after-a-split-subtree ()
+  (ibis-mode-test--with-buffer ibis-mode-test--split-subtree
+    (let ((edges (ibis-mode-test--edges)))
+      (forward-line 1)
+      (ibis-insert-sibling)
+      (should (equal (buffer-string)
+                     "? a\n  \u2192 b\n    + c\n\n    + d\n  \u2192 \n  \u2192 e\n"))
+      (should-not (cdr (ibis-parse-buffer)))
+      (should (equal (ibis-mode-test--edges)
+                     (sort (cons '("" responds-to "a") edges)
+                           (lambda (a b)
+                             (string< (format "%S" a) (format "%S" b)))))))))
+
 (ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
   (ibis-mode-test--with-buffer "? a\n"
     (ibis-toggle-tag "x")
