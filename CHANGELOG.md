@@ -24,7 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   indentation.
 - Commands to insert a child issue, position or argument under the
   node at point, refusing a nesting the grammar rejects, and
-  `ibis-toggle-tag` to add or remove a hashtag on the current line.
+  `ibis-toggle-tag` (`C-c t`) to add or remove a hashtag on the current
+  line.
+- `ibis-insert-sibling` (`M-RET`) and `ibis-insert-child` (`S-RET`),
+  which repeat the marker of the node at point as a sibling or add the
+  child its class calls for, and the replacement of a `->` marker typed
+  at the start of a line with `→`.
+- `ibis-promote` and `ibis-demote` (`M-<left>` and `M-<right>`) to shift
+  a node and its subtree by one level, and `ibis-move-up` and
+  `ibis-move-down` (`M-<up>` and `M-<down>`) to swap it with a sibling.
 - A flymake backend reporting the parser's diagnostics, and
   `ibis-check` to run it.
 - A README covering the file format, the nesting rules and the keys.

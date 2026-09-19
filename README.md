@@ -70,22 +70,36 @@ the vocabulary allows, and a position under an argument as a response.
 
 ## Editing
 
-| Key       | Command                  |
-|-----------|--------------------------|
-| `TAB`     | `ibis-indent-line`       |
-| `RET`     | `ibis-newline-and-indent`|
-| `C-c ?`   | `ibis-insert-issue`      |
-| `C-c >`   | `ibis-insert-position`   |
-| `C-c +`   | `ibis-insert-pro`        |
-| `C-c -`   | `ibis-insert-con`        |
-| `C-c t`   | `ibis-toggle-tag`        |
-| `C-c C-c` | `ibis-check`             |
+| Key         | Command                  |
+|-------------|--------------------------|
+| `TAB`       | `ibis-indent-line`       |
+| `RET`       | `ibis-newline-and-indent`|
+| `M-RET`     | `ibis-insert-sibling`    |
+| `S-RET`     | `ibis-insert-child`      |
+| `C-c ?`     | `ibis-insert-issue`      |
+| `C-c >`     | `ibis-insert-position`   |
+| `C-c +`     | `ibis-insert-pro`        |
+| `C-c -`     | `ibis-insert-con`        |
+| `C-c t`     | `ibis-toggle-tag`        |
+| `M-<left>`  | `ibis-promote`           |
+| `M-<right>` | `ibis-demote`            |
+| `M-<up>`    | `ibis-move-up`           |
+| `M-<down>`  | `ibis-move-down`         |
+| `C-c C-c`   | `ibis-check`             |
 
 `TAB` indents like the line above; pressing it again cycles through
 the child and ancestor indentations. The insert commands add a child
 line under the node at point, after its subtree, and refuse a nesting
-the grammar rejects. `C-c t` completes over the hashtags already used
-in the buffer and adds or removes one on the current line.
+the grammar rejects. `M-RET` repeats the marker of the node at point
+as a sibling below its subtree; `S-RET` adds the customary child — a
+position under an issue, a supporting argument under a position, an
+issue under an argument. Typing `->` at the start of a line writes
+`→`. `C-c t` completes over the hashtags already used in the buffer
+and adds or removes one on the current line.
+
+`M-<left>` and `M-<right>` shift the node at point and its subtree by
+one level without touching its marker; `M-<up>` and `M-<down>` swap it
+with the sibling above or below, subtree and all.
 
 Buffers fold with `outline-minor-mode`, top-level issues are listed by
 `imenu`, and flymake flags what the parser rejects — `C-c C-c` runs it
