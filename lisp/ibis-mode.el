@@ -307,6 +307,39 @@ an argument an issue."
   (interactive)
   (ibis-mode--insert-child 'con))
 
+(defun ibis-mode--shift-subtree (delta)
+  "Shift the node at point and its subtree by DELTA columns.
+
+Signal a `user-error' when point is not on a node line, or when
+the shift would move the node past the left margin."
+  (let* ((node (or (ibis-mode--node-at-point)
+                   (user-error "No IBIS node at point")))
+         (offset (max 0 (- (point) (ibis-mode--text-beginning))))
+         (line (line-number-at-pos))
+         (end (copy-marker (ibis-mode--subtree-end node))))
+    (when (< (+ (plist-get node :column) delta) 0)
+      (user-error "Node is already at the left margin"))
+    (save-excursion
+      (goto-char (plist-get node :beg))
+      (while (< (point) end)
+        (unless (looking-at-p (rx bol (zero-or-more " ") eol))
+          (indent-line-to (+ (ibis-mode--indentation) delta)))
+        (forward-line 1)))
+    (set-marker end nil)
+    (goto-char (point-min))
+    (forward-line (1- line))
+    (goto-char (+ (ibis-mode--text-beginning) offset))))
+
+(defun ibis-promote ()
+  "Shift the node at point and its subtree two columns to the left."
+  (interactive)
+  (ibis-mode--shift-subtree -2))
+
+(defun ibis-demote ()
+  "Shift the node at point and its subtree two columns to the right."
+  (interactive)
+  (ibis-mode--shift-subtree 2))
+
 (defun ibis-mode--tags-in-buffer ()
   "Return the hashtag names used in the buffer, in order of first use."
   (let ((tags nil))
@@ -361,6 +394,8 @@ A backend for `flymake-diagnostic-functions'."
   "RET" #'ibis-newline-and-indent
   "M-RET" #'ibis-insert-sibling
   "S-<return>" #'ibis-insert-child
+  "M-<left>" #'ibis-promote
+  "M-<right>" #'ibis-demote
   "C-c ?" #'ibis-insert-issue
   "C-c >" #'ibis-insert-position
   "C-c +" #'ibis-insert-pro

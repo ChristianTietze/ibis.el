@@ -271,6 +271,35 @@
     (ibis-mode-test--type "? A -> B")
     (should (equal (buffer-string) "? A -> B"))))
 
+(ert-deftest ibis-mode-test-demote-shifts-the-subtree ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n"
+    (forward-line 1)
+    (ibis-demote)
+    (should (equal (buffer-string) "? a\n    → b\n      + c\n"))))
+
+(ert-deftest ibis-mode-test-demote-keeps-point-in-the-text ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n"
+    (forward-line 1)
+    (forward-char 4)
+    (ibis-demote)
+    (should (equal (buffer-substring-no-properties (point) (point-max))
+                   "b\n"))))
+
+(ert-deftest ibis-mode-test-promote-at-the-left-margin-is-an-error ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (should-error (ibis-promote) :type 'user-error)))
+
+(ert-deftest ibis-mode-test-promote-reverses-a-demote ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n"
+    (forward-line 1)
+    (ibis-demote)
+    (ibis-promote)
+    (should (equal (buffer-string) "? a\n  → b\n    + c\n"))))
+
+(ert-deftest ibis-mode-test-promote-and-demote-are-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "M-<left>") #'ibis-promote))
+  (should (eq (keymap-lookup ibis-mode-map "M-<right>") #'ibis-demote)))
+
 (ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
   (ibis-mode-test--with-buffer "? a\n"
     (ibis-toggle-tag "x")
