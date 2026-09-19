@@ -311,7 +311,7 @@ A backend for `flymake-diagnostic-functions'."
   "C-c >" #'ibis-insert-position
   "C-c +" #'ibis-insert-pro
   "C-c -" #'ibis-insert-con
-  "C-c #" #'ibis-toggle-tag
+  "C-c t" #'ibis-toggle-tag
   "C-c C-c" #'ibis-check)
 
 (defun ibis-mode--imenu-index ()

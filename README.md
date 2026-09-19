@@ -78,13 +78,13 @@ the vocabulary allows, and a position under an argument as a response.
 | `C-c >`   | `ibis-insert-position`   |
 | `C-c +`   | `ibis-insert-pro`        |
 | `C-c -`   | `ibis-insert-con`        |
-| `C-c #`   | `ibis-toggle-tag`        |
+| `C-c t`   | `ibis-toggle-tag`        |
 | `C-c C-c` | `ibis-check`             |
 
 `TAB` indents like the line above; pressing it again cycles through
 the child and ancestor indentations. The insert commands add a child
 line under the node at point, after its subtree, and refuse a nesting
-the grammar rejects. `C-c #` completes over the hashtags already used
+the grammar rejects. `C-c t` completes over the hashtags already used
 in the buffer and adds or removes one on the current line.
 
 Buffers fold with `outline-minor-mode`, top-level issues are listed by

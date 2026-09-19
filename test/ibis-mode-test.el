@@ -235,7 +235,11 @@
   (should (eq (keymap-lookup ibis-mode-map "C-c >") #'ibis-insert-position))
   (should (eq (keymap-lookup ibis-mode-map "C-c +") #'ibis-insert-pro))
   (should (eq (keymap-lookup ibis-mode-map "C-c -") #'ibis-insert-con))
-  (should (eq (keymap-lookup ibis-mode-map "C-c #") #'ibis-toggle-tag)))
+  (should (eq (keymap-lookup ibis-mode-map "C-c t") #'ibis-toggle-tag)))
+
+(ert-deftest ibis-mode-test-toggle-tag-key ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (should (eq (key-binding (kbd "C-c t")) #'ibis-toggle-tag))))
 
 (defun ibis-mode-test--flymake-diagnostics ()
   "Return the diagnostics `ibis-flymake' reports for the current buffer."
