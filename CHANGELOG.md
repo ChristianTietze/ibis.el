@@ -36,3 +36,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A flymake backend reporting the parser's diagnostics, and
   `ibis-check` to run it.
 - A README covering the file format, the nesting rules and the keys.
+
+### Fixed
+
+- `ibis-mode` indents with spaces, so shifting a subtree into column
+  eight no longer writes a tab that turns the line into one the parser
+  rejects.
+- A subtree now reaches across the blank lines inside it, the way the
+  parser does: `ibis-demote`, `ibis-move-up`, `ibis-move-down` and
+  `ibis-insert-sibling` take the whole block instead of leaving its
+  tail behind under a parent it never had.
+- An inserted top-level sibling is separated by a blank line from the
+  block below it as well as from the one above, without doubling a
+  separator that is already there.

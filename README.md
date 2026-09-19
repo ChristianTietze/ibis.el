@@ -117,4 +117,7 @@ indentation. The vocabulary itself is queryable: `ibis-subclass-p`,
 ## Development
 
 `make help` lists the targets; `make all` compiles with warnings as
-errors, lints with package-lint and checkdoc, and runs the ERT suite.
+errors, lints with package-lint and checkdoc, runs the ERT suite and
+then `make test-e2e`, which drives a terminal Emacs inside tmux with
+real keystrokes and checks both the buffer and the rendered frame. It
+skips itself when tmux is not installed.
