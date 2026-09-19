@@ -310,6 +310,24 @@
   (ibis-mode-test--with-buffer "? a\n"
     (should-error (ibis-promote) :type 'user-error)))
 
+(ert-deftest ibis-mode-test-promote-at-the-left-margin-changes-nothing ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n? c\n"
+    (forward-line 2)
+    (forward-char 2)
+    (let ((origin (point)))
+      (should-error (ibis-promote) :type 'user-error)
+      (should (equal (buffer-string) "? a\n  \u2192 b\n? c\n"))
+      (should (= (point) origin)))))
+
+(ert-deftest ibis-mode-test-demote-keeps-point-on-a-later-line ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + cde\n"
+    (forward-line 2)
+    (forward-char 7)
+    (ibis-demote)
+    (should (equal (buffer-substring-no-properties (point) (line-end-position))
+                   "de"))
+    (should (= (current-indentation) 6))))
+
 (ert-deftest ibis-mode-test-promote-reverses-a-demote ()
   (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n"
     (forward-line 1)

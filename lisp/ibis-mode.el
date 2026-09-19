@@ -335,10 +335,10 @@ the shift would move the node past the left margin."
   (let* ((node (or (ibis-mode--node-at-point)
                    (user-error "No IBIS node at point")))
          (offset (max 0 (- (point) (ibis-mode--text-beginning))))
-         (line (line-number-at-pos))
-         (end (copy-marker (ibis-mode--subtree-end node))))
+         (end nil))
     (when (< (+ (plist-get node :column) delta) 0)
       (user-error "Node is already at the left margin"))
+    (setq end (copy-marker (ibis-mode--subtree-end node)))
     (save-excursion
       (goto-char (plist-get node :beg))
       (while (< (point) end)
@@ -346,8 +346,7 @@ the shift would move the node past the left margin."
           (indent-line-to (+ (ibis-mode--indentation) delta)))
         (forward-line 1)))
     (set-marker end nil)
-    (goto-char (point-min))
-    (forward-line (1- line))
+    (goto-char (plist-get node :beg))
     (goto-char (+ (ibis-mode--text-beginning) offset))))
 
 (defun ibis-promote ()
