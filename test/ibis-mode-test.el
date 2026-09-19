@@ -227,6 +227,19 @@
     (ibis-insert-sibling)
     (should (equal (buffer-string) "? a\n\n? \n"))))
 
+(ert-deftest ibis-mode-test-insert-sibling-separates-the-following-block ()
+  (ibis-mode-test--with-buffer "? a\n? b\n"
+    (ibis-insert-sibling)
+    (should (equal (buffer-string) "? a\n\n? \n\n? b\n"))
+    (should (equal (buffer-substring-no-properties
+                    (line-beginning-position) (point))
+                   "? "))))
+
+(ert-deftest ibis-mode-test-insert-sibling-keeps-one-blank-line-on-each-side ()
+  (ibis-mode-test--with-buffer "? a\n\n? c\n"
+    (ibis-insert-sibling)
+    (should (equal (buffer-string) "? a\n\n? \n\n? c\n"))))
+
 (ert-deftest ibis-mode-test-insert-sibling-on-blank-line-is-an-error ()
   (ibis-mode-test--with-buffer "\n"
     (should-error (ibis-insert-sibling) :type 'user-error)))

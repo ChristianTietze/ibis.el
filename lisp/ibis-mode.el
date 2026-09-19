@@ -247,9 +247,9 @@ two blocks stays between them."
 (defun ibis-mode--insert-line (node indent marker blank)
   "Insert a line with MARKER at INDENT after the subtree of NODE.
 
-BLANK non-nil precedes the line with an empty one, the way the
-serializer separates top-level blocks.  Leave point after the
-marker."
+BLANK non-nil surrounds the line with empty ones, the way the
+serializer separates top-level blocks, without doubling a
+separator that is already there.  Leave point after the marker."
   (goto-char (ibis-mode--subtree-end node))
   (unless (bolp)
     (insert "\n"))
@@ -258,6 +258,9 @@ marker."
   (insert (make-string indent ?\s)
           (cdr (assq marker ibis-mode--insert-markers))
           " \n")
+  (when (and blank (not (eobp))
+             (not (looking-at-p ibis-mode--blank-rx)))
+    (save-excursion (insert "\n")))
   (forward-char -1))
 
 (defun ibis-mode--insert-child (marker)
