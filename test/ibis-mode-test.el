@@ -234,6 +234,27 @@
 (ert-deftest ibis-mode-test-insert-sibling-is-bound ()
   (should (eq (keymap-lookup ibis-mode-map "M-RET") #'ibis-insert-sibling)))
 
+(ert-deftest ibis-mode-test-insert-child-under-issue-is-a-position ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (ibis-insert-child)
+    (should (equal (buffer-string) "? a\n  \u2192 \n"))))
+
+(ert-deftest ibis-mode-test-insert-child-under-position-is-a-pro ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n"
+    (forward-line 1)
+    (ibis-insert-child)
+    (should (equal (buffer-string) "? a\n  \u2192 b\n    + \n"))))
+
+(ert-deftest ibis-mode-test-insert-child-under-argument-is-an-issue ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + c\n"
+    (forward-line 2)
+    (ibis-insert-child)
+    (should (equal (buffer-string)
+                   "? a\n  \u2192 b\n    + c\n      ? \n"))))
+
+(ert-deftest ibis-mode-test-insert-child-is-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "S-<return>") #'ibis-insert-child)))
+
 (ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
   (ibis-mode-test--with-buffer "? a\n"
     (ibis-toggle-tag "x")

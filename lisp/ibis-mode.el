@@ -254,6 +254,24 @@ Signal a `user-error' when point is not on a node line."
     (ibis-mode--insert-line node column (plist-get node :marker)
                             (zerop column))))
 
+(defconst ibis-mode--child-markers
+  '((issue . position)
+    (position . pro)
+    (argument . issue))
+  "Alist mapping a parent class to the marker `ibis-insert-child' gives it.")
+
+(defun ibis-insert-child ()
+  "Insert the customary child of the node at point under it.
+
+An issue gets a position, a position a supporting argument, and
+an argument an issue."
+  (interactive)
+  (let ((node (or (ibis-mode--node-at-point)
+                  (user-error "No IBIS node at point"))))
+    (ibis-mode--insert-child
+     (cdr (assq (ibis--marker-class (plist-get node :marker))
+                ibis-mode--child-markers)))))
+
 (defun ibis-insert-issue ()
   "Insert a new issue under the node at point."
   (interactive)
@@ -327,6 +345,7 @@ A backend for `flymake-diagnostic-functions'."
   :doc "Keymap for `ibis-mode'."
   "RET" #'ibis-newline-and-indent
   "M-RET" #'ibis-insert-sibling
+  "S-<return>" #'ibis-insert-child
   "C-c ?" #'ibis-insert-issue
   "C-c >" #'ibis-insert-position
   "C-c +" #'ibis-insert-pro
