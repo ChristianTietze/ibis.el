@@ -110,6 +110,10 @@
     (,ibis-mode--hashtag-rx (1 'ibis-hashtag-face prepend)))
   "Font lock keywords highlighting marker, identifier, prose and hashtags.")
 
+(defconst ibis-mode--blank-rx
+  (rx bol (zero-or-more " ") eol)
+  "Regexp matching a line holding nothing but whitespace.")
+
 (defconst ibis-mode--outline-rx
   (rx (zero-or-more " ") ibis-marker-rx " ")
   "Regexp matching the marker that opens a node line.")
@@ -149,7 +153,7 @@ the rest those of its ancestors down to the left margin."
     (catch 'found
       (while (not (bobp))
         (forward-line -1)
-        (unless (looking-at-p (rx bol (zero-or-more " ") eol))
+        (unless (looking-at-p ibis-mode--blank-rx)
           (throw 'found (ibis-mode--indentation))))
       0)))
 
@@ -322,7 +326,7 @@ the shift would move the node past the left margin."
     (save-excursion
       (goto-char (plist-get node :beg))
       (while (< (point) end)
-        (unless (looking-at-p (rx bol (zero-or-more " ") eol))
+        (unless (looking-at-p ibis-mode--blank-rx)
           (indent-line-to (+ (ibis-mode--indentation) delta)))
         (forward-line 1)))
     (set-marker end nil)
@@ -339,6 +343,84 @@ the shift would move the node past the left margin."
   "Shift the node at point and its subtree two columns to the right."
   (interactive)
   (ibis-mode--shift-subtree 2))
+
+(defun ibis-mode--previous-sibling-beginning (node)
+  "Return the start of the sibling preceding NODE, or nil when it has none."
+  (save-excursion
+    (goto-char (plist-get node :beg))
+    (let ((column (plist-get node :column))
+          (found nil)
+          (searching t))
+      (while (and searching (not (bobp)))
+        (forward-line -1)
+        (unless (looking-at-p ibis-mode--blank-rx)
+          (let ((parsed (ibis-mode--node-at-point)))
+            (cond
+             ((null parsed) (setq searching nil))
+             ((> (plist-get parsed :column) column) nil)
+             (t
+              (setq searching nil)
+              (when (= (plist-get parsed :column) column)
+                (setq found (plist-get parsed :beg))))))))
+      found)))
+
+(defun ibis-mode--next-sibling-beginning (node)
+  "Return the start of the sibling following NODE, or nil when it has none."
+  (save-excursion
+    (goto-char (ibis-mode--subtree-end node))
+    (while (and (not (eobp)) (looking-at-p ibis-mode--blank-rx))
+      (forward-line 1))
+    (let ((parsed (and (not (eobp)) (ibis-mode--node-at-point))))
+      (and parsed
+           (= (plist-get parsed :column) (plist-get node :column))
+           (plist-get parsed :beg)))))
+
+(defun ibis-mode--swap-with-next-sibling ()
+  "Swap the node at point and its subtree with the sibling below them.
+
+Whatever separates the two, such as the blank line between
+top-level blocks, stays between them.  Signal a `user-error' when
+point is not on a node line or the node has no next sibling."
+  (let* ((node (or (ibis-mode--node-at-point)
+                   (user-error "No IBIS node at point")))
+         (offset (max 0 (- (point) (ibis-mode--text-beginning))))
+         (next-beg (or (ibis-mode--next-sibling-beginning node)
+                       (user-error "No next sibling")))
+         (beg (plist-get node :beg))
+         (end (ibis-mode--subtree-end node))
+         (next-end (save-excursion
+                     (goto-char next-beg)
+                     (ibis-mode--subtree-end (ibis-mode--node-at-point)))))
+    (save-excursion
+      (goto-char next-end)
+      (unless (bolp)
+        (insert "\n")
+        (setq next-end (point))))
+    (let ((subtree (buffer-substring-no-properties beg end))
+          (separator (buffer-substring-no-properties end next-beg))
+          (next (buffer-substring-no-properties next-beg next-end)))
+      (delete-region beg next-end)
+      (insert next separator subtree)
+      (goto-char (+ beg (length next) (length separator)))
+      (goto-char (+ (ibis-mode--text-beginning) offset)))))
+
+(defun ibis-move-down ()
+  "Swap the node at point and its subtree with the sibling below them."
+  (interactive)
+  (ibis-mode--swap-with-next-sibling))
+
+(defun ibis-move-up ()
+  "Swap the node at point and its subtree with the sibling above them."
+  (interactive)
+  (let* ((node (or (ibis-mode--node-at-point)
+                   (user-error "No IBIS node at point")))
+         (offset (max 0 (- (point) (ibis-mode--text-beginning))))
+         (previous (or (ibis-mode--previous-sibling-beginning node)
+                       (user-error "No previous sibling"))))
+    (goto-char previous)
+    (ibis-mode--swap-with-next-sibling)
+    (goto-char previous)
+    (goto-char (+ (ibis-mode--text-beginning) offset))))
 
 (defun ibis-mode--tags-in-buffer ()
   "Return the hashtag names used in the buffer, in order of first use."
@@ -396,6 +478,8 @@ A backend for `flymake-diagnostic-functions'."
   "S-<return>" #'ibis-insert-child
   "M-<left>" #'ibis-promote
   "M-<right>" #'ibis-demote
+  "M-<up>" #'ibis-move-up
+  "M-<down>" #'ibis-move-down
   "C-c ?" #'ibis-insert-issue
   "C-c >" #'ibis-insert-position
   "C-c +" #'ibis-insert-pro

@@ -300,6 +300,41 @@
   (should (eq (keymap-lookup ibis-mode-map "M-<left>") #'ibis-promote))
   (should (eq (keymap-lookup ibis-mode-map "M-<right>") #'ibis-demote)))
 
+(ert-deftest ibis-mode-test-move-down-swaps-siblings-with-subtrees ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n  → d\n    + e\n"
+    (forward-line 1)
+    (ibis-move-down)
+    (should (equal (buffer-string)
+                   "? a\n  → d\n    + e\n  → b\n    + c\n"))
+    (should (equal (buffer-substring-no-properties
+                    (line-beginning-position) (line-end-position))
+                   "  → b"))))
+
+(ert-deftest ibis-mode-test-move-up-without-a-sibling-is-an-error ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n  → d\n"
+    (forward-line 1)
+    (should-error (ibis-move-up) :type 'user-error)))
+
+(ert-deftest ibis-mode-test-move-up-reverses-a-move-down ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n  → d\n    + e\n"
+    (forward-line 1)
+    (ibis-move-down)
+    (ibis-move-up)
+    (should (equal (buffer-string)
+                   "? a\n  → b\n    + c\n  → d\n    + e\n"))
+    (should (equal (buffer-substring-no-properties
+                    (line-beginning-position) (line-end-position))
+                   "  → b"))))
+
+(ert-deftest ibis-mode-test-move-down-keeps-the-blank-line-between-blocks ()
+  (ibis-mode-test--with-buffer "? a\n\n? b\n"
+    (ibis-move-down)
+    (should (equal (buffer-string) "? b\n\n? a\n"))))
+
+(ert-deftest ibis-mode-test-move-commands-are-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "M-<up>") #'ibis-move-up))
+  (should (eq (keymap-lookup ibis-mode-map "M-<down>") #'ibis-move-down)))
+
 (ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
   (ibis-mode-test--with-buffer "? a\n"
     (ibis-toggle-tag "x")
