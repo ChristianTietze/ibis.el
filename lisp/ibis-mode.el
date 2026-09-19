@@ -515,6 +515,7 @@ position, `+' and `-' for arguments.  Indentation by two spaces
 nests a node under the one above it."
   (setq-local font-lock-defaults '(ibis-mode--font-lock-keywords t))
   (setq-local indent-line-function #'ibis-indent-line)
+  (setq-local indent-tabs-mode nil)
   (setq-local outline-regexp ibis-mode--outline-rx)
   (setq-local outline-level #'ibis-mode--outline-level)
   (setq-local imenu-create-index-function #'ibis-mode--imenu-index)

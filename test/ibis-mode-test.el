@@ -285,6 +285,14 @@
     (should (equal (buffer-substring-no-properties (point) (point-max))
                    "b\n"))))
 
+(ert-deftest ibis-mode-test-demote-into-column-eight-writes-no-tab ()
+  (let ((indent-tabs-mode t))
+    (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + c\n      ? d\n"
+      (forward-line 3)
+      (ibis-demote)
+      (should-not (string-match-p "\t" (buffer-string)))
+      (should-not (cdr (ibis-parse-buffer))))))
+
 (ert-deftest ibis-mode-test-promote-at-the-left-margin-is-an-error ()
   (ibis-mode-test--with-buffer "? a\n"
     (should-error (ibis-promote) :type 'user-error)))
