@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-21
+
 ### Added
 
 - IBIS vocabulary 0.7 as data: classes with their hierarchy and
@@ -36,23 +38,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A flymake backend reporting the parser's diagnostics, and
   `ibis-check` to run it.
 - A README covering the file format, the nesting rules and the keys.
-
-### Fixed
-
-- `ibis-mode` indents with spaces, so shifting a subtree into column
-  eight no longer writes a tab that turns the line into one the parser
-  rejects.
-- A subtree now reaches across the blank lines inside it, the way the
-  parser does: `ibis-demote`, `ibis-move-up`, `ibis-move-down` and
-  `ibis-insert-sibling` take the whole block instead of leaving its
-  tail behind under a parent it never had.
-- An inserted top-level sibling is separated by a blank line from the
-  block below it as well as from the one above, without doubling a
-  separator that is already there.
-- A subtree and a sibling are now read off the parser, so a line the
-  parser cannot read is as transparent to `ibis-demote`, `ibis-move-up`
-  and `ibis-move-down` as it is to the nesting itself: a node below such
-  a line moves with the subtree it belongs to, and a sibling behind one
-  is found instead of reported missing.
-- A shift that fails halfway, such as one in a read-only buffer, no
-  longer leaves a marker behind pointing into the buffer.
