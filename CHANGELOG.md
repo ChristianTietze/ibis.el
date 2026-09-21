@@ -54,3 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `ibis-move-down` as it is to the nesting itself: a node below such
   a line moves with the subtree it belongs to, and a sibling behind one
   is found instead of reported missing.
+- A shift that fails halfway, such as one in a read-only buffer, no
+  longer leaves a marker behind pointing into the buffer.

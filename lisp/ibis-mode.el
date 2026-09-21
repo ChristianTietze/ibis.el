@@ -344,20 +344,20 @@ an argument an issue."
 
 Signal a `user-error' when point is not on a node line, or when
 the shift would move the node past the left margin."
-  (let* ((node (or (ibis-mode--node-at-point)
-                   (user-error "No IBIS node at point")))
-         (offset (max 0 (- (point) (ibis-mode--text-beginning))))
-         (end nil))
+  (let ((node (or (ibis-mode--node-at-point)
+                  (user-error "No IBIS node at point")))
+        (offset (max 0 (- (point) (ibis-mode--text-beginning)))))
     (when (< (+ (plist-get node :column) delta) 0)
       (user-error "Node is already at the left margin"))
-    (setq end (copy-marker (ibis-mode--subtree-end node)))
-    (save-excursion
-      (goto-char (plist-get node :beg))
-      (while (< (point) end)
-        (unless (looking-at-p ibis-mode--blank-rx)
-          (indent-line-to (max 0 (+ (ibis-mode--indentation) delta))))
-        (forward-line 1)))
-    (set-marker end nil)
+    (let ((end (copy-marker (ibis-mode--subtree-end node))))
+      (unwind-protect
+          (save-excursion
+            (goto-char (plist-get node :beg))
+            (while (< (point) end)
+              (unless (looking-at-p ibis-mode--blank-rx)
+                (indent-line-to (max 0 (+ (ibis-mode--indentation) delta))))
+              (forward-line 1)))
+        (set-marker end nil)))
     (goto-char (plist-get node :beg))
     (goto-char (+ (ibis-mode--text-beginning) offset))))
 

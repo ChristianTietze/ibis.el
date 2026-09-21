@@ -328,6 +328,19 @@
                    "de"))
     (should (= (current-indentation) 6))))
 
+(ert-deftest ibis-mode-test-demote-in-a-read-only-buffer-releases-the-marker ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n    + c\n"
+    (let* ((markers nil)
+           (copy (symbol-function 'copy-marker)))
+      (cl-letf (((symbol-function 'copy-marker)
+                 (lambda (&rest arguments)
+                   (car (push (apply copy arguments) markers)))))
+        (forward-line 1)
+        (setq buffer-read-only t)
+        (should-error (ibis-demote) :type 'buffer-read-only))
+      (should markers)
+      (should-not (seq-find #'marker-buffer markers)))))
+
 (ert-deftest ibis-mode-test-promote-reverses-a-demote ()
   (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n"
     (forward-line 1)
