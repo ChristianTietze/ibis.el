@@ -49,3 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An inserted top-level sibling is separated by a blank line from the
   block below it as well as from the one above, without doubling a
   separator that is already there.
+- A subtree and a sibling are now read off the parser, so a line the
+  parser cannot read is as transparent to `ibis-demote`, `ibis-move-up`
+  and `ibis-move-down` as it is to the nesting itself: a node below such
+  a line moves with the subtree it belongs to, and a sibling behind one
+  is found instead of reported missing.

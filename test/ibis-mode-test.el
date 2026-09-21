@@ -448,6 +448,52 @@ Subject and object are the prose of the nodes they name."
                            (lambda (a b)
                              (string< (format "%S" a) (format "%S" b)))))))))
 
+(defconst ibis-mode-test--prose-in-subtree
+  "? a\n  \u2192 b\n    + c\nPROSE\n    + d\n"
+  "A map whose second argument sits behind a line the parser cannot read.")
+
+(ert-deftest ibis-mode-test-prose-line-inside-a-subtree-keeps-the-parent ()
+  (ibis-mode-test--with-buffer ibis-mode-test--prose-in-subtree
+    (should (equal (mapcar #'cdr (cdr (ibis-parse-buffer)))
+                   '("Not an IBIS line")))
+    (should (equal (ibis-mode-test--edges)
+                   '(("b" responds-to "a")
+                     ("c" supports "b")
+                     ("d" supports "b"))))))
+
+(ert-deftest ibis-mode-test-demote-takes-a-subtree-split-by-prose ()
+  (ibis-mode-test--with-buffer ibis-mode-test--prose-in-subtree
+    (let ((edges (ibis-mode-test--edges)))
+      (forward-line 1)
+      (ibis-demote)
+      (should (equal (buffer-string)
+                     "? a\n    \u2192 b\n      + c\n  PROSE\n      + d\n"))
+      (should (equal (ibis-mode-test--edges) edges)))))
+
+(ert-deftest ibis-mode-test-promote-reverses-a-demote-over-prose ()
+  (ibis-mode-test--with-buffer ibis-mode-test--prose-in-subtree
+    (forward-line 1)
+    (ibis-demote)
+    (ibis-promote)
+    (should (equal (buffer-string) ibis-mode-test--prose-in-subtree))))
+
+(ert-deftest ibis-mode-test-move-down-finds-a-sibling-past-prose ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n  note\n    + c\n  \u2192 e\n"
+    (let ((edges (ibis-mode-test--edges)))
+      (forward-line 1)
+      (ibis-move-down)
+      (should (equal (buffer-string)
+                     "? a\n  \u2192 e\n  \u2192 b\n  note\n    + c\n"))
+      (should (equal (ibis-mode-test--edges) edges)))))
+
+(ert-deftest ibis-mode-test-move-up-reverses-a-move-down-over-prose ()
+  (ibis-mode-test--with-buffer "? a\n  \u2192 b\n  note\n    + c\n  \u2192 e\n"
+    (forward-line 1)
+    (ibis-move-down)
+    (ibis-move-up)
+    (should (equal (buffer-string)
+                   "? a\n  \u2192 b\n  note\n    + c\n  \u2192 e\n"))))
+
 (ert-deftest ibis-mode-test-toggle-tag-adds-then-removes ()
   (ibis-mode-test--with-buffer "? a\n"
     (ibis-toggle-tag "x")

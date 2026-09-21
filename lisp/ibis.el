@@ -189,9 +189,9 @@ it specializes."
 
 ID is the optional identifier written in the file, CLASS one of
 `issue', `position' or `argument', TEXT the node's prose, TAGS its
-hashtags without the leading `#', and BEG the buffer position the
-node was parsed from."
-  id class text tags beg)
+hashtags without the leading `#', BEG the buffer position the node
+was parsed from, and COLUMN the indentation that nests it."
+  id class text tags beg column)
 
 (cl-defstruct (ibis-edge (:copier nil))
   "A directed relation between two `ibis-node' structs.
@@ -338,7 +338,8 @@ Diagnostics are an alist of (POSITION . MESSAGE) in document order."
                                :class (ibis--marker-class marker)
                                :text (plist-get parsed :text)
                                :tags (plist-get parsed :tags)
-                               :beg beg))))
+                               :beg beg
+                               :column column))))
                   (while (and stack (>= (caar stack) column))
                     (pop stack))
                   (cond

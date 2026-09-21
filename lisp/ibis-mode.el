@@ -221,28 +221,40 @@ position the line starts at."
                    beg (line-end-position)))))
     (and parsed (append parsed (list :beg beg)))))
 
+(defun ibis-mode--node-positions ()
+  "Return the (BEG . COLUMN) of every node line, in document order.
+
+The parser decides which lines are nodes: a line it cannot read is
+transparent, so a deeper node below it still nests under the node
+above it."
+  (mapcar (lambda (node)
+            (cons (ibis-node-beg node) (ibis-node-column node)))
+          (ibis-network-nodes (car (ibis-parse-buffer)))))
+
+(defun ibis-mode--positions-after (node)
+  "Return the node positions following NODE, in document order."
+  (let ((beg (plist-get node :beg))
+        (positions (ibis-mode--node-positions)))
+    (while (and positions (/= (caar positions) beg))
+      (setq positions (cdr positions)))
+    (cdr positions)))
+
 (defun ibis-mode--subtree-end (node)
   "Return the position just after the subtree of NODE.
 
-Blank lines belong to the subtree when a deeper node follows them,
-so that a block kept apart for readability moves as one.  Blank
-lines trailing the subtree do not, so that the separator between
-two blocks stays between them."
-  (save-excursion
-    (goto-char (plist-get node :beg))
-    (forward-line 1)
-    (let ((end (point))
-          (column (plist-get node :column))
-          (searching t))
-      (while (and searching (not (eobp)))
-        (if (looking-at-p ibis-mode--blank-rx)
-            (forward-line 1)
-          (let ((parsed (ibis-mode--node-at-point)))
-            (if (and parsed (> (plist-get parsed :column) column))
-                (progn (forward-line 1)
-                       (setq end (point)))
-              (setq searching nil)))))
-      end)))
+Blank and prose lines belong to the subtree when a deeper node
+follows them, so that a block kept apart for readability moves as
+one.  Lines trailing the subtree do not, so that the separator
+between two blocks stays between them."
+  (let ((last (plist-get node :beg))
+        (column (plist-get node :column))
+        (positions (ibis-mode--positions-after node)))
+    (while (and positions (> (cdar positions) column))
+      (setq last (caar positions))
+      (setq positions (cdr positions)))
+    (save-excursion
+      (goto-char last)
+      (line-beginning-position 2))))
 
 (defun ibis-mode--insert-line (node indent marker blank)
   "Insert a line with MARKER at INDENT after the subtree of NODE.
@@ -343,7 +355,7 @@ the shift would move the node past the left margin."
       (goto-char (plist-get node :beg))
       (while (< (point) end)
         (unless (looking-at-p ibis-mode--blank-rx)
-          (indent-line-to (+ (ibis-mode--indentation) delta)))
+          (indent-line-to (max 0 (+ (ibis-mode--indentation) delta))))
         (forward-line 1)))
     (set-marker end nil)
     (goto-char (plist-get node :beg))
@@ -361,34 +373,24 @@ the shift would move the node past the left margin."
 
 (defun ibis-mode--previous-sibling-beginning (node)
   "Return the start of the sibling preceding NODE, or nil when it has none."
-  (save-excursion
-    (goto-char (plist-get node :beg))
-    (let ((column (plist-get node :column))
-          (found nil)
-          (searching t))
-      (while (and searching (not (bobp)))
-        (forward-line -1)
-        (unless (looking-at-p ibis-mode--blank-rx)
-          (let ((parsed (ibis-mode--node-at-point)))
-            (cond
-             ((null parsed) (setq searching nil))
-             ((> (plist-get parsed :column) column) nil)
-             (t
-              (setq searching nil)
-              (when (= (plist-get parsed :column) column)
-                (setq found (plist-get parsed :beg))))))))
-      found)))
+  (let ((beg (plist-get node :beg))
+        (column (plist-get node :column))
+        (previous nil))
+    (dolist (position (ibis-mode--node-positions))
+      (when (and (< (car position) beg)
+                 (<= (cdr position) column))
+        (setq previous (and (= (cdr position) column) (car position)))))
+    previous))
 
 (defun ibis-mode--next-sibling-beginning (node)
   "Return the start of the sibling following NODE, or nil when it has none."
-  (save-excursion
-    (goto-char (ibis-mode--subtree-end node))
-    (while (and (not (eobp)) (looking-at-p ibis-mode--blank-rx))
-      (forward-line 1))
-    (let ((parsed (and (not (eobp)) (ibis-mode--node-at-point))))
-      (and parsed
-           (= (plist-get parsed :column) (plist-get node :column))
-           (plist-get parsed :beg)))))
+  (let ((column (plist-get node :column))
+        (positions (ibis-mode--positions-after node)))
+    (while (and positions (> (cdar positions) column))
+      (setq positions (cdr positions)))
+    (and positions
+         (= (cdar positions) column)
+         (caar positions))))
 
 (defun ibis-mode--swap-with-next-sibling ()
   "Swap the node at point and its subtree with the sibling below them.
