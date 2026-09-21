@@ -34,9 +34,13 @@ ELISP
 
 printf '? a\n  \xe2\x86\x92 b\n    + c\n\n    + d\n  \xe2\x86\x92 e\n' > "$RUN_DIR/split.ibis"
 
+# Every tmux call goes to a private server, so that the run neither
+# reads the user's tmux.conf nor changes their running server.
+t() { tmux -L "$SESSION" "$@"; }
+
 cleanup() {
     emacsclient -s "$DAEMON" -e "(kill-emacs)" >/dev/null 2>&1
-    tmux kill-session -t "$SESSION" >/dev/null 2>&1
+    t kill-server >/dev/null 2>&1
     return 0
 }
 trap cleanup EXIT INT TERM
@@ -44,13 +48,13 @@ trap cleanup EXIT INT TERM
 echo "tmux session: $SESSION"
 echo "run directory: $RUN_DIR"
 
-tmux new-session -d -s "$SESSION" -x 80 -y 24 \
+tmux -L "$SESSION" -f /dev/null new-session -d -s "$SESSION" -x 80 -y 24 \
     "$EMACS -nw --init-directory=$PROJECT_DIR/dev --load $RUN_DIR/e2e-init.el 2>$STDERR_LOG"
 # Emacs reads S-<return> only as a CSI u sequence, which tmux forwards
 # only with extended keys on; a zero escape time keeps M-<key> from
 # being read as a lone ESC.
-tmux set-option -t "$SESSION" -g extended-keys on >/dev/null 2>&1
-tmux set-option -s escape-time 0 >/dev/null 2>&1
+t set-option -g extended-keys on >/dev/null 2>&1
+t set-option -s escape-time 0 >/dev/null 2>&1
 
 waited=0
 while ! emacsclient -s "$DAEMON" -e t >/dev/null 2>&1; do
@@ -63,14 +67,14 @@ while ! emacsclient -s "$DAEMON" -e t >/dev/null 2>&1; do
     fi
 done
 
-key() { tmux send-keys -t "$SESSION" "$@"; }
-type_text() { tmux send-keys -t "$SESSION" -l -- "$1"; }
-meta_char() { tmux send-keys -t "$SESSION" Escape; tmux send-keys -t "$SESSION" -l -- "$1"; }
+key() { t send-keys -t "$SESSION" "$@"; }
+type_text() { t send-keys -t "$SESSION" -l -- "$1"; }
+meta_char() { t send-keys -t "$SESSION" Escape; t send-keys -t "$SESSION" -l -- "$1"; }
 
 capture_frame() {
     frame_num=$((frame_num + 1))
     file=$(printf "%s/frames/%03d-%s.txt" "$RUN_DIR" "$frame_num" "$1")
-    tmux capture-pane -t "$SESSION" -p > "$file"
+    t capture-pane -t "$SESSION" -p > "$file"
     echo "$file"
 }
 
@@ -98,7 +102,7 @@ expect_buffer() {
 expect_frame() {
     i=0
     while [ "$i" -lt 50 ]; do
-        if tmux capture-pane -t "$SESSION" -p 2>/dev/null | grep -qF -- "$1"; then
+        if t capture-pane -t "$SESSION" -p 2>/dev/null | grep -qF -- "$1"; then
             return 0
         fi
         sleep 0.2
@@ -111,7 +115,7 @@ expect_frame() {
 expect_frame_after() {
     i=0
     while [ "$i" -lt 50 ]; do
-        if tmux capture-pane -t "$SESSION" -p 2>/dev/null \
+        if t capture-pane -t "$SESSION" -p 2>/dev/null \
                 | grep -A1 -F -- "$1" | grep -qF -- "$2"; then
             return 0
         fi
