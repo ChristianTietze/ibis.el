@@ -43,7 +43,8 @@ cleanup() {
     t kill-server >/dev/null 2>&1
     return 0
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT TERM
 
 echo "tmux session: $SESSION"
 echo "run directory: $RUN_DIR"
