@@ -41,6 +41,7 @@ t() { tmux -L "$SESSION" "$@"; }
 cleanup() {
     emacsclient -s "$DAEMON" -e "(kill-emacs)" >/dev/null 2>&1
     t kill-server >/dev/null 2>&1
+    [ -n "$SOCKET" ] && rm -f "$SOCKET"
     return 0
 }
 trap cleanup EXIT
@@ -54,6 +55,9 @@ tmux -L "$SESSION" -f /dev/null new-session -d -s "$SESSION" -x 80 -y 24 \
 # Emacs reads S-<return> only as a CSI u sequence, which tmux forwards
 # only with extended keys on; a zero escape time keeps M-<key> from
 # being read as a lone ESC.
+# The server unlinks no socket of its own when it goes, so cleanup
+# needs the path while there is still a server to ask.
+SOCKET=$(t display-message -p '#{socket_path}' 2>/dev/null)
 t set-option -g extended-keys on >/dev/null 2>&1
 t set-option -s escape-time 0 >/dev/null 2>&1
 
