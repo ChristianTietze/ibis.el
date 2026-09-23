@@ -140,6 +140,30 @@
 (ert-deftest ibis-mode-test-toggle-fold-is-bound ()
   (should (eq (keymap-lookup ibis-mode-map "C-c TAB") #'ibis-toggle-fold)))
 
+(ert-deftest ibis-mode-test-toggle-fold-all-shows-root-issues-then-everything ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n\n? d\n  → e\n"
+    (forward-line 5)
+    (ibis-toggle-fold-all)
+    (should (invisible-p (line-beginning-position)))
+    (should (invisible-p 5))
+    (should-not (invisible-p 1))
+    (should-not (invisible-p (save-excursion (goto-char (point-min))
+                                             (line-beginning-position 5))))
+    (ibis-toggle-fold-all)
+    (should-not (invisible-p 5))
+    (should-not (invisible-p (line-beginning-position)))))
+
+(ert-deftest ibis-mode-test-toggle-fold-all-refolds-a-partly-open-buffer ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n? c\n  → d\n"
+    (ibis-toggle-fold-all)
+    (ibis-toggle-fold)
+    (should-not (invisible-p 5))
+    (ibis-toggle-fold-all)
+    (should (invisible-p 5))))
+
+(ert-deftest ibis-mode-test-toggle-fold-all-is-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "C-c <backtab>") #'ibis-toggle-fold-all)))
+
 (ert-deftest ibis-mode-test-imenu-index ()
   (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
     (let ((index (funcall imenu-create-index-function)))

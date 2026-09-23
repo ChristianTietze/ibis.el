@@ -495,6 +495,23 @@ Signal a `user-error' when point is not on a node line."
       (outline-show-subtree)
     (outline-hide-subtree)))
 
+(defun ibis-mode--nested-node-visible-p ()
+  "Return non-nil when a node below the top level is visible."
+  (seq-some (lambda (position)
+              (and (> (cdr position) 0)
+                   (not (outline-invisible-p (car position)))))
+            (ibis-mode--node-positions)))
+
+(defun ibis-toggle-fold-all ()
+  "Fold the buffer down to its top-level issues, or show everything.
+
+The buffer folds while any nested node is visible, so a partly
+opened map folds shut again before it opens up."
+  (interactive)
+  (if (ibis-mode--nested-node-visible-p)
+      (outline-hide-sublevels 1)
+    (outline-show-all)))
+
 (defun ibis-mode--tags-in-buffer ()
   "Return the hashtag names used in the buffer, in order of first use."
   (let ((tags nil))
@@ -561,6 +578,7 @@ A backend for `flymake-diagnostic-functions'."
   "C-c -" #'ibis-insert-con
   "C-c t" #'ibis-toggle-tag
   "C-c TAB" #'ibis-toggle-fold
+  "C-c <backtab>" #'ibis-toggle-fold-all
   "C-c C-c" #'ibis-check)
 
 (defun ibis-mode--imenu-index ()
