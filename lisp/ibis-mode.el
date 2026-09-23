@@ -484,6 +484,17 @@ point is not on a node line or the node has no next sibling."
     (goto-char previous)
     (goto-char (+ (ibis-mode--text-beginning) offset))))
 
+(defun ibis-toggle-fold ()
+  "Hide the subtree of the node at point, or show it when hidden.
+
+Signal a `user-error' when point is not on a node line."
+  (interactive)
+  (unless (ibis-mode--node-at-point)
+    (user-error "No IBIS node at point"))
+  (if (outline-invisible-p (line-end-position))
+      (outline-show-subtree)
+    (outline-hide-subtree)))
+
 (defun ibis-mode--tags-in-buffer ()
   "Return the hashtag names used in the buffer, in order of first use."
   (let ((tags nil))
@@ -549,6 +560,7 @@ A backend for `flymake-diagnostic-functions'."
   "C-c +" #'ibis-insert-pro
   "C-c -" #'ibis-insert-con
   "C-c t" #'ibis-toggle-tag
+  "C-c TAB" #'ibis-toggle-fold
   "C-c C-c" #'ibis-check)
 
 (defun ibis-mode--imenu-index ()

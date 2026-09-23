@@ -124,6 +124,22 @@
   (ibis-mode-test--with-buffer "? a\n"
     (should outline-minor-mode)))
 
+(ert-deftest ibis-mode-test-toggle-fold-hides-and-shows-the-subtree ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n? d\n"
+    (ibis-toggle-fold)
+    (should (invisible-p (1+ (line-end-position))))
+    (should (invisible-p (line-beginning-position 3)))
+    (should-not (invisible-p (line-beginning-position 4)))
+    (ibis-toggle-fold)
+    (should-not (invisible-p (line-end-position 2)))))
+
+(ert-deftest ibis-mode-test-toggle-fold-off-a-node-is-an-error ()
+  (ibis-mode-test--with-buffer "plain\n"
+    (should-error (ibis-toggle-fold) :type 'user-error)))
+
+(ert-deftest ibis-mode-test-toggle-fold-is-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "C-c TAB") #'ibis-toggle-fold)))
+
 (ert-deftest ibis-mode-test-imenu-index ()
   (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
     (let ((index (funcall imenu-create-index-function)))
