@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `ibis-transient`, an optional module: `(require 'ibis-transient)` binds `C-c m` to a menu of navigation, insert, structure and other commands.
 - `ibis-insert-root-issue` (`C-c I`) starts a new top-level issue after the block at point.
 - `C-c i` as an unshifted binding for `ibis-insert-issue`; with a prefix argument, or off a node line, it starts a top-level issue.
 

@@ -33,6 +33,15 @@ Put `lisp/` on your `load-path`:
   :mode "\\.ibis\\'")
 ```
 
+The transient menu is optional and lives in its own file. Loading it
+binds `C-c m`; nothing else depends on it:
+
+```elisp
+(use-package ibis-transient
+  :load-path "path/to/ibis.el/lisp"
+  :after ibis-mode)
+```
+
 ## The file format
 
 One node per line. Two spaces of indentation nest a node under the one
@@ -106,6 +115,12 @@ and adds or removes one on the current line.
 `M-<left>` and `M-<right>` shift the node at point and its subtree by
 one level without touching its marker; `M-<up>` and `M-<down>` swap it
 with the sibling above or below, subtree and all.
+
+With `ibis-transient` loaded, `C-c m` opens a menu of these commands
+in four columns: navigate (`p`, `n`, `u`, `b`, `f` walk the outline
+and keep the menu open), insert, structure (the `M-<arrow>` keys, kept
+open so a subtree can be nudged repeatedly), and other (`t` tag, `!`
+check, `q` quit).
 
 Buffers fold with `outline-minor-mode`, top-level issues are listed by
 `imenu`, and flymake flags what the parser rejects — `C-c C-c` runs it
