@@ -28,6 +28,7 @@ cat > "$RUN_DIR/e2e-init.el" <<ELISP
 (setq auto-save-default nil)
 (add-to-list 'load-path "$PROJECT_DIR/lisp")
 (require 'ibis-mode)
+(require 'ibis-transient)
 (setq server-name "$DAEMON")
 (server-start)
 ELISP
@@ -268,6 +269,31 @@ step_flymake_reports_a_stray_argument() {
     return 0
 }
 
+MENU="menu.ibis"
+
+step_menu_shows_columns() {
+    emacsclient -s "$DAEMON" -e "(find-file \"$RUN_DIR/$MENU\")" >/dev/null 2>&1
+    type_text "? a"
+    key Enter
+    type_text "  → b"
+    key C-c m
+    expect_frame "Navigate" || return 1
+    expect_frame "Structure" || return 1
+    capture_frame "menu" >/dev/null
+    expect_frame "M-<left> promote"
+}
+
+step_menu_repeats_demote_then_inserts_con() {
+    key M-Right
+    key M-Right
+    expect_frame "Structure" || return 1
+    key "-"
+    type_text "c"
+    expect_buffer "$MENU" '? a\n      → b\n        - c\n' || return 1
+    capture_frame "menu-demote-con" >/dev/null
+    expect_frame "        - c"
+}
+
 echo ""
 echo "=== End-to-end tests ==="
 run_step "sibling-after-typing" step_sibling_after_typing
@@ -280,6 +306,8 @@ run_step "toggle-tag" step_toggle_tag
 run_step "move-down-over-blank-line" step_move_down_over_blank_line
 run_step "move-up-restores" step_move_up_restores
 run_step "flymake-stray-argument" step_flymake_reports_a_stray_argument
+run_step "menu-shows-columns" step_menu_shows_columns
+run_step "menu-repeats-demote-then-inserts-con" step_menu_repeats_demote_then_inserts_con
 
 echo ""
 echo "=== Summary ==="
