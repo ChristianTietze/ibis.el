@@ -37,6 +37,12 @@
 ;;;###autoload (autoload 'ibis-transient-menu "ibis-transient" nil t)
 (transient-define-prefix ibis-transient-menu ()
   "Menu of the `ibis-mode' editing commands."
+  ["Navigate"
+   ("p" "previous" outline-previous-visible-heading :transient t)
+   ("n" "next" outline-next-visible-heading :transient t)
+   ("u" "parent" outline-up-heading :transient t)
+   ("b" "previous sibling" outline-backward-same-level :transient t)
+   ("f" "next sibling" outline-forward-same-level :transient t)]
   ["Insert"
    ("i" "issue" ibis-insert-issue)
    ("I" "issue (root)" ibis-insert-root-issue)

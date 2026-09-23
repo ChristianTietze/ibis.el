@@ -54,5 +54,30 @@
       (should (eq (plist-get suffix :command) (cdr pair)))
       (should (eq (plist-get suffix :transient) t)))))
 
+(ert-deftest ibis-transient-test-navigate-keys-repeat ()
+  (dolist (pair '(("p" . outline-previous-visible-heading)
+                  ("n" . outline-next-visible-heading)
+                  ("u" . outline-up-heading)
+                  ("b" . outline-backward-same-level)
+                  ("f" . outline-forward-same-level)))
+    (let ((suffix (ibis-transient-test--suffix (car pair))))
+      (should (eq (plist-get suffix :command) (cdr pair)))
+      (should (eq (plist-get suffix :transient) t)))))
+
+(ert-deftest ibis-transient-test-outline-commands-walk-the-map ()
+  (with-temp-buffer
+    (insert "? a\n  → b\n    + c\n? d\n")
+    (ibis-mode)
+    (goto-char (point-min))
+    (forward-line 2)
+    (outline-up-heading 1)
+    (should (looking-at-p "  → b"))
+    (outline-up-heading 1)
+    (should (looking-at-p "? a"))
+    (outline-forward-same-level 1)
+    (should (looking-at-p "? d"))
+    (outline-previous-visible-heading 1)
+    (should (looking-at-p "    \\+ c"))))
+
 (provide 'ibis-transient-test)
 ;;; ibis-transient-test.el ends here
