@@ -120,6 +120,10 @@
             (should (invisible-p beg)))))
       (forward-line 1))))
 
+(ert-deftest ibis-mode-test-enables-outline-minor-mode ()
+  (ibis-mode-test--with-buffer "? a\n"
+    (should outline-minor-mode)))
+
 (ert-deftest ibis-mode-test-imenu-index ()
   (ibis-mode-test--with-buffer (ibis-mode-test--fixture-string)
     (let ((index (funcall imenu-create-index-function)))

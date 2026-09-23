@@ -582,6 +582,7 @@ nests a node under the one above it."
   (setq-local indent-tabs-mode nil)
   (setq-local outline-regexp ibis-mode--outline-rx)
   (setq-local outline-level #'ibis-mode--outline-level)
+  (outline-minor-mode 1)
   (setq-local imenu-create-index-function #'ibis-mode--imenu-index)
   (add-hook 'flymake-diagnostic-functions #'ibis-flymake nil t)
   (setq-local require-final-newline t)
