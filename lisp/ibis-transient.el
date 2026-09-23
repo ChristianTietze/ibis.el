@@ -37,25 +37,29 @@
 ;;;###autoload (autoload 'ibis-transient-menu "ibis-transient" nil t)
 (transient-define-prefix ibis-transient-menu ()
   "Menu of the `ibis-mode' editing commands."
-  ["Navigate"
-   ("p" "previous" outline-previous-visible-heading :transient t)
-   ("n" "next" outline-next-visible-heading :transient t)
-   ("u" "parent" outline-up-heading :transient t)
-   ("b" "previous sibling" outline-backward-same-level :transient t)
-   ("f" "next sibling" outline-forward-same-level :transient t)]
-  ["Insert"
-   ("i" "issue" ibis-insert-issue)
-   ("I" "issue (root)" ibis-insert-root-issue)
-   (">" "position" ibis-insert-position)
-   ("+" "pro" ibis-insert-pro)
-   ("-" "con" ibis-insert-con)
-   ("s" "sibling" ibis-insert-sibling)
-   ("c" "child" ibis-insert-child)]
-  ["Structure"
-   ("M-<left>" "promote" ibis-promote :transient t)
-   ("M-<right>" "demote" ibis-demote :transient t)
-   ("M-<up>" "move up" ibis-move-up :transient t)
-   ("M-<down>" "move down" ibis-move-down :transient t)])
+  [["Navigate"
+    ("p" "previous" outline-previous-visible-heading :transient t)
+    ("n" "next" outline-next-visible-heading :transient t)
+    ("u" "parent" outline-up-heading :transient t)
+    ("b" "previous sibling" outline-backward-same-level :transient t)
+    ("f" "next sibling" outline-forward-same-level :transient t)]
+   ["Insert"
+    ("i" "issue" ibis-insert-issue)
+    ("I" "issue (root)" ibis-insert-root-issue)
+    (">" "position" ibis-insert-position)
+    ("+" "pro" ibis-insert-pro)
+    ("-" "con" ibis-insert-con)
+    ("s" "sibling" ibis-insert-sibling)
+    ("c" "child" ibis-insert-child)]
+   ["Structure"
+    ("M-<left>" "promote" ibis-promote :transient t)
+    ("M-<right>" "demote" ibis-demote :transient t)
+    ("M-<up>" "move up" ibis-move-up :transient t)
+    ("M-<down>" "move down" ibis-move-down :transient t)]
+   ["Other"
+    ("t" "tag" ibis-toggle-tag)
+    ("!" "check" ibis-check)
+    ("q" "quit" transient-quit-one)]])
 
 (keymap-set ibis-mode-map "C-c m" #'ibis-transient-menu)
 

@@ -79,5 +79,10 @@
     (outline-previous-visible-heading 1)
     (should (looking-at-p "    \\+ c"))))
 
+(ert-deftest ibis-transient-test-other-keys ()
+  (should (eq (ibis-transient-test--command "t") #'ibis-toggle-tag))
+  (should (eq (ibis-transient-test--command "!") #'ibis-check))
+  (should (eq (ibis-transient-test--command "q") #'transient-quit-one)))
+
 (provide 'ibis-transient-test)
 ;;; ibis-transient-test.el ends here
