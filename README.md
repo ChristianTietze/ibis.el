@@ -12,11 +12,27 @@ parses and serializes the `.ibis` text format, and `ibis-mode` edits
 it.
 
 ```
-? I-1: Wie werden Bedingung und Termin verständlich?
-  → Bestehende Formen nur umbenennen
-    - Klärt Voraussetzungen und Ausfall nicht.
-  → Zustandserfüllung und automatischen Termin getrennt verwalten #Empfehlung
-    + Termin kann verfallen; spätere Spielerhandlung bleibt möglich.
+? I-1: How should conditions and deadlines be made clear?
+  → Rename existing forms only
+    - Does not clarify prerequisites or what happens when they fail.
+  → Manage state conditions and automatic deadlines separately
+    + A deadline can expire while later player actions remain possible.
+
+? I-2: Do pages need to become executable code?
+  → Data forms create observers and timers #test
+    + Dependencies and writes remain visible.
+  → Constrained factories create the same data #test
+    + Helpers and a REPL, without arbitrary runtime callbacks.
+  → Arbitrary runtime callbacks
+    + Flexible composition.
+    - Hidden dependencies, side effects, and closure state.
+
+? I-3: What should Tangle do?
+  → Collect data forms in one file
+    + One artifact; execution stays with the interpreter.
+  → Generate an executable entry point with a controlled context
+    + Build and inspect it in the REPL.
+    - Requires bindings, quoting, or macros; `eval` alone is not enough.
 ```
 
 ## Requirements
