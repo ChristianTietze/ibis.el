@@ -5,8 +5,11 @@ Issue maps in plain text for Emacs, backed by Dorian Taylor's
 
 An IBIS map records a deliberation: the *issues* raised, the
 *positions* taken on them and the *arguments* for and against those
-positions. `ibis.el` encodes that vocabulary as data, parses and
-serializes the `.ibis` text format, and `ibis-mode` edits it.
+positions. The CogNexus Institute's [IBIS Field
+Guide](https://cognexus.org/IBIS_FieldguideVer12012010.pdf) (PDF)
+introduces the method. `ibis.el` encodes that vocabulary as data,
+parses and serializes the `.ibis` text format, and `ibis-mode` edits
+it.
 
 ```
 ? I-1: Wie werden Bedingung und Termin verständlich?
