@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `ibis-mode` turns on `outline-minor-mode`.
+- `ibis-toggle-fold` (`C-c TAB`) folds or opens the subtree at point; `ibis-toggle-fold-all` (`C-c S-TAB`) folds the map to its top-level issues and back. Both are in the transient menu.
+
 ## [0.2.0] - 2026-09-23
 
 ### Added

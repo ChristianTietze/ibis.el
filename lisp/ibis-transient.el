@@ -42,7 +42,9 @@
     ("n" "next" outline-next-visible-heading :transient t)
     ("u" "parent" outline-up-heading :transient t)
     ("b" "previous sibling" outline-backward-same-level :transient t)
-    ("f" "next sibling" outline-forward-same-level :transient t)]
+    ("f" "next sibling" outline-forward-same-level :transient t)
+    ("TAB" "fold" ibis-toggle-fold :transient t)
+    ("<backtab>" "fold all" ibis-toggle-fold-all :transient t)]
    ["Insert"
     ("i" "issue" ibis-insert-issue)
     ("I" "issue (root)" ibis-insert-root-issue)

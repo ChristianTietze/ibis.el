@@ -79,6 +79,13 @@
     (outline-previous-visible-heading 1)
     (should (looking-at-p "    \\+ c"))))
 
+(ert-deftest ibis-transient-test-fold-keys-repeat ()
+  (dolist (pair '(("TAB" . ibis-toggle-fold)
+                  ("<backtab>" . ibis-toggle-fold-all)))
+    (let ((suffix (ibis-transient-test--suffix (car pair))))
+      (should (eq (plist-get suffix :command) (cdr pair)))
+      (should (eq (plist-get suffix :transient) t)))))
+
 (ert-deftest ibis-transient-test-other-keys ()
   (should (eq (ibis-transient-test--command "t") #'ibis-toggle-tag))
   (should (eq (ibis-transient-test--command "!") #'ibis-check))

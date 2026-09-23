@@ -110,6 +110,8 @@ the vocabulary allows, and a position under an argument as a response.
 | `C-c +`     | `ibis-insert-pro`        |
 | `C-c -`     | `ibis-insert-con`        |
 | `C-c t`     | `ibis-toggle-tag`        |
+| `C-c TAB`   | `ibis-toggle-fold`       |
+| `C-c S-TAB` | `ibis-toggle-fold-all`   |
 | `M-<left>`  | `ibis-promote`           |
 | `M-<right>` | `ibis-demote`            |
 | `M-<up>`    | `ibis-move-up`           |
@@ -133,12 +135,15 @@ one level without touching its marker; `M-<up>` and `M-<down>` swap it
 with the sibling above or below, subtree and all.
 
 With `ibis-transient` loaded, `C-c m` opens a menu of these commands
-in four columns: navigate (`p`, `n`, `u`, `b`, `f` walk the outline
-and keep the menu open), insert, structure (the `M-<arrow>` keys, kept
+in four columns: navigate (`p`, `n`, `u`, `b`, `f` walk the outline,
+`TAB` and `S-TAB` fold, all keeping the menu open), insert, structure (the `M-<arrow>` keys, kept
 open so a subtree can be nudged repeatedly), and other (`t` tag, `!`
 check, `q` quit).
 
-Buffers fold with `outline-minor-mode`, top-level issues are listed by
+`outline-minor-mode` is on, so the usual outline commands work.
+`C-c TAB` folds the subtree at point or opens it again; `C-c S-TAB`
+folds the whole map down to its top-level issues, and opens everything
+once nothing nested is left showing. Top-level issues are listed by
 `imenu`, and flymake flags what the parser rejects — `C-c C-c` runs it
 and shows the list.
 
