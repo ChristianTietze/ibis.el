@@ -45,5 +45,14 @@
   (should (eq (ibis-transient-test--command "s") #'ibis-insert-sibling))
   (should (eq (ibis-transient-test--command "c") #'ibis-insert-child)))
 
+(ert-deftest ibis-transient-test-structure-keys-repeat ()
+  (dolist (pair '(("M-<left>" . ibis-promote)
+                  ("M-<right>" . ibis-demote)
+                  ("M-<up>" . ibis-move-up)
+                  ("M-<down>" . ibis-move-down)))
+    (let ((suffix (ibis-transient-test--suffix (car pair))))
+      (should (eq (plist-get suffix :command) (cdr pair)))
+      (should (eq (plist-get suffix :transient) t)))))
+
 (provide 'ibis-transient-test)
 ;;; ibis-transient-test.el ends here

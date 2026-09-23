@@ -44,7 +44,12 @@
    ("+" "pro" ibis-insert-pro)
    ("-" "con" ibis-insert-con)
    ("s" "sibling" ibis-insert-sibling)
-   ("c" "child" ibis-insert-child)])
+   ("c" "child" ibis-insert-child)]
+  ["Structure"
+   ("M-<left>" "promote" ibis-promote :transient t)
+   ("M-<right>" "demote" ibis-demote :transient t)
+   ("M-<up>" "move up" ibis-move-up :transient t)
+   ("M-<down>" "move down" ibis-move-down :transient t)])
 
 (keymap-set ibis-mode-map "C-c m" #'ibis-transient-menu)
 
