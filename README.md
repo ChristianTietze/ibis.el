@@ -76,7 +76,8 @@ the vocabulary allows, and a position under an argument as a response.
 | `RET`       | `ibis-newline-and-indent`|
 | `M-RET`     | `ibis-insert-sibling`    |
 | `S-RET`     | `ibis-insert-child`      |
-| `C-c ?`     | `ibis-insert-issue`      |
+| `C-c i`, `C-c ?` | `ibis-insert-issue`  |
+| `C-c I`     | `ibis-insert-root-issue` |
 | `C-c >`     | `ibis-insert-position`   |
 | `C-c +`     | `ibis-insert-pro`        |
 | `C-c -`     | `ibis-insert-con`        |
@@ -90,7 +91,9 @@ the vocabulary allows, and a position under an argument as a response.
 `TAB` indents like the line above; pressing it again cycles through
 the child and ancestor indentations. The insert commands add a child
 line under the node at point, after its subtree, and refuse a nesting
-the grammar rejects. `M-RET` repeats the marker of the node at point
+the grammar rejects. `C-c i` with a prefix argument, or off a node
+line, starts a new top-level issue after the block at point, as
+`C-c I` always does. `M-RET` repeats the marker of the node at point
 as a sibling below its subtree; `S-RET` adds the customary child — a
 position under an issue, a supporting argument under a position, an
 issue under an argument. Typing `->` at the start of a line writes

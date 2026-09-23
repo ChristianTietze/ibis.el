@@ -225,9 +225,48 @@
     (ibis-insert-con)
     (should (equal (buffer-string) "? a\n  → b\n    - \n? c\n"))))
 
-(ert-deftest ibis-mode-test-insert-on-plain-line-is-an-error ()
-  (ibis-mode-test--with-buffer "plain\n"
-    (should-error (ibis-insert-issue) :type 'user-error)))
+(ert-deftest ibis-mode-test-insert-issue-off-a-node-starts-a-root-issue ()
+  (ibis-mode-test--with-buffer "? a\n\nplain\n"
+    (goto-char (point-max))
+    (ibis-insert-issue)
+    (should (equal (buffer-string) "? a\n\n? \n\nplain\n"))))
+
+(ert-deftest ibis-mode-test-insert-issue-with-prefix-starts-a-root-issue ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n? c\n"
+    (forward-line 1)
+    (ibis-insert-issue '(4))
+    (should (equal (buffer-string) "? a\n  → b\n\n? \n\n? c\n"))))
+
+(ert-deftest ibis-mode-test-insert-root-issue-after-the-block-at-point ()
+  (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n\n? d\n"
+    (forward-line 2)
+    (ibis-insert-root-issue)
+    (should (equal (buffer-string) "? a\n  → b\n    + c\n\n? \n\n? d\n"))
+    (should (equal (buffer-substring-no-properties
+                    (line-beginning-position) (point))
+                   "? "))))
+
+(ert-deftest ibis-mode-test-insert-root-issue-on-blank-line-follows-the-block-above ()
+  (ibis-mode-test--with-buffer "? a\n\n? c\n"
+    (forward-line 1)
+    (ibis-insert-root-issue)
+    (should (equal (buffer-string) "? a\n\n? \n\n? c\n"))))
+
+(ert-deftest ibis-mode-test-insert-root-issue-in-empty-buffer ()
+  (ibis-mode-test--with-buffer ""
+    (ibis-insert-root-issue)
+    (should (equal (buffer-string) "? \n"))
+    (should (= (point) 3))))
+
+(ert-deftest ibis-mode-test-insert-root-issue-before-the-first-block ()
+  (ibis-mode-test--with-buffer "plain\n\n? a\n"
+    (ibis-insert-root-issue)
+    (should (equal (buffer-string) "? \n\nplain\n\n? a\n"))))
+
+(ert-deftest ibis-mode-test-insert-issue-is-bound ()
+  (should (eq (keymap-lookup ibis-mode-map "C-c ?") #'ibis-insert-issue))
+  (should (eq (keymap-lookup ibis-mode-map "C-c i") #'ibis-insert-issue))
+  (should (eq (keymap-lookup ibis-mode-map "C-c I") #'ibis-insert-root-issue)))
 
 (ert-deftest ibis-mode-test-insert-sibling-keeps-marker-and-indent ()
   (ibis-mode-test--with-buffer "? a\n  → b\n    + c\n"

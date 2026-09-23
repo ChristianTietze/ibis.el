@@ -334,10 +334,40 @@ an argument an issue."
      (cdr (assq (ibis--marker-class (plist-get node :marker))
                 ibis-mode--child-markers)))))
 
-(defun ibis-insert-issue ()
-  "Insert a new issue under the node at point."
+(defun ibis-mode--block-at-point ()
+  "Return the top-level node whose block point is in or below, or nil.
+
+A blank or prose line belongs to the block above it."
+  (let ((beg nil))
+    (dolist (position (ibis-mode--node-positions))
+      (when (and (zerop (cdr position))
+                 (<= (car position) (point)))
+        (setq beg (car position))))
+    (and beg (save-excursion (goto-char beg) (ibis-mode--node-at-point)))))
+
+(defun ibis-insert-root-issue ()
+  "Start a new top-level issue after the block at point.
+
+Before the first block, start it at the current line instead."
   (interactive)
-  (ibis-mode--insert-child 'issue))
+  (let ((block (ibis-mode--block-at-point)))
+    (if block
+        (ibis-mode--insert-line block 0 'issue t)
+      (forward-line 0)
+      (insert "? \n")
+      (unless (or (eobp) (looking-at-p ibis-mode--blank-rx))
+        (save-excursion (insert "\n")))
+      (forward-char -1))))
+
+(defun ibis-insert-issue (&optional root)
+  "Insert a new issue under the node at point.
+
+With prefix argument ROOT, or when point is not on a node line,
+start a new top-level issue after the block at point instead."
+  (interactive "P")
+  (if (or root (not (ibis-mode--node-at-point)))
+      (ibis-insert-root-issue)
+    (ibis-mode--insert-child 'issue)))
 
 (defun ibis-insert-position ()
   "Insert a new position under the node at point."
@@ -513,6 +543,8 @@ A backend for `flymake-diagnostic-functions'."
   "M-<up>" #'ibis-move-up
   "M-<down>" #'ibis-move-down
   "C-c ?" #'ibis-insert-issue
+  "C-c i" #'ibis-insert-issue
+  "C-c I" #'ibis-insert-root-issue
   "C-c >" #'ibis-insert-position
   "C-c +" #'ibis-insert-pro
   "C-c -" #'ibis-insert-con
