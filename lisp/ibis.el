@@ -3,7 +3,7 @@
 ;; Copyright (C) 2026 Christian Tietze
 
 ;; Author: Christian Tietze <me@christiantietze.de>
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: outlines, wp
 ;; URL: https://github.com/ChristianTietze/ibis.el
