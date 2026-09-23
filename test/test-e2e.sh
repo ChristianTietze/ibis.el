@@ -77,10 +77,15 @@ key() { t send-keys -t "$SESSION" "$@"; }
 type_text() { t send-keys -t "$SESSION" -l -- "$1"; }
 meta_char() { t send-keys -t "$SESSION" Escape; t send-keys -t "$SESSION" -l -- "$1"; }
 
+# tmux writes a tab for a run of cells Emacs skipped over with cursor
+# motion instead of painting; expanding it restores what the screen
+# shows.
+frame() { t capture-pane -t "$SESSION" -p 2>/dev/null | expand; }
+
 capture_frame() {
     frame_num=$((frame_num + 1))
     file=$(printf "%s/frames/%03d-%s.txt" "$RUN_DIR" "$frame_num" "$1")
-    t capture-pane -t "$SESSION" -p > "$file"
+    frame > "$file"
     echo "$file"
 }
 
@@ -108,7 +113,7 @@ expect_buffer() {
 expect_frame() {
     i=0
     while [ "$i" -lt 50 ]; do
-        if t capture-pane -t "$SESSION" -p 2>/dev/null | grep -qF -- "$1"; then
+        if frame | grep -qF -- "$1"; then
             return 0
         fi
         sleep 0.2
@@ -121,8 +126,7 @@ expect_frame() {
 expect_frame_after() {
     i=0
     while [ "$i" -lt 50 ]; do
-        if t capture-pane -t "$SESSION" -p 2>/dev/null \
-                | grep -A1 -F -- "$1" | grep -qF -- "$2"; then
+        if frame | grep -A1 -F -- "$1" | grep -qF -- "$2"; then
             return 0
         fi
         sleep 0.2
