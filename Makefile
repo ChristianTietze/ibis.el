@@ -7,8 +7,8 @@ BATCH    := $(EMACS) $(INIT_DIR) --batch \
 
 PKG      := ibis
 
-SRCS     := lisp/$(PKG).el lisp/$(PKG)-mode.el
-TESTS    := test/$(PKG)-test.el test/$(PKG)-mode-test.el
+SRCS     := lisp/$(PKG).el lisp/$(PKG)-mode.el lisp/$(PKG)-transient.el
+TESTS    := test/$(PKG)-test.el test/$(PKG)-mode-test.el test/$(PKG)-transient-test.el
 
 .DEFAULT_GOAL := help
 
